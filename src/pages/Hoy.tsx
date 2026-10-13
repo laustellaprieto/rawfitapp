@@ -7,6 +7,7 @@ import { estadoCheckinFotos } from '../lib/progreso';
 import type { Ir } from '../App';
 import { HabitoFila } from '../components/HabitoFila';
 import { Icon } from '../components/Icon';
+import { CaloriasHoy } from '../components/CaloriasHoy';
 import { SeccionRacha } from '../components/Racha';
 import { Anillo } from '../components/ui';
 
@@ -93,6 +94,8 @@ export default function Hoy({ perfil, ir }: { perfil: Perfil; ir: Ir }) {
       </section>
 
       <SeccionRacha activos={activos} idx={idx} />
+
+      <CaloriasHoy perfil={perfil} />
 
       {/* Accesos rápidos */}
       <div className="animate-entrada mb-4 grid grid-cols-2 gap-3">

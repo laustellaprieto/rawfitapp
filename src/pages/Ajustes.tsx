@@ -3,9 +3,11 @@ import { AVISO_SALUD } from '../data/habitos';
 import { guardarPerfil, type Perfil } from '../lib/db';
 import { borrarTodo, descargarCopia, importarCopia } from '../lib/copia';
 import { fechaRelativa, toISO } from '../lib/fechas';
-import { num, numTxt, parseNum } from '../lib/format';
+import { num } from '../lib/format';
 import { useHabitos } from '../lib/hooks';
+import { EditorCalorias } from '../components/Calorias';
 import { EditorHabitos } from '../components/EditorHabitos';
+import { calcularCalorias, kcal, textoMeta } from '../lib/calorias';
 import { Icon } from '../components/Icon';
 import { Sheet } from '../components/Sheet';
 import { Encabezado } from '../components/ui';
@@ -25,6 +27,8 @@ export default function Ajustes({ perfil }: { perfil: Perfil }) {
   const { todos } = useHabitos();
   const archivo = useRef<HTMLInputElement>(null);
   const [habitosAbierto, setHabitosAbierto] = useState(false);
+  const [caloriasAbierto, setCaloriasAbierto] = useState(false);
+  const calorias = calcularCalorias(perfil);
   const [estado, setEstado] = useState<{ tipo: 'ok' | 'error' | 'cargando'; texto: string }>();
 
   const exportar = async () => {
@@ -69,23 +73,30 @@ export default function Ajustes({ perfil }: { perfil: Perfil }) {
       <section className="tarjeta animate-entrada mb-4 flex flex-col gap-4">
         <h2 className="titulo text-2xl">Mis datos</h2>
         <Campo id="a-nombre" etiqueta="Nombre" valor={perfil.nombre} onGuardar={(v) => v && guardarPerfil({ nombre: v })} />
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="etiqueta" htmlFor="a-inicio">Fecha de inicio</label>
-            <input id="a-inicio" type="date" value={perfil.fechaInicio} onChange={(e) => e.target.value && guardarPerfil({ fechaInicio: e.target.value })} className="campo" />
-          </div>
-          <Campo
-            id="a-est"
-            etiqueta="Estatura (cm)"
-            valor={numTxt(perfil.estatura)}
-            decimal
-            onGuardar={(v) => {
-              const n = parseNum(v);
-              if (n === undefined || (n >= 100 && n <= 250)) guardarPerfil({ estatura: n });
-            }}
-          />
+        <div>
+          <label className="etiqueta" htmlFor="a-inicio">Fecha de inicio</label>
+          <input id="a-inicio" type="date" value={perfil.fechaInicio} onChange={(e) => e.target.value && guardarPerfil({ fechaInicio: e.target.value })} className="campo" />
         </div>
         <Campo id="a-obj" etiqueta="Objetivo" valor={perfil.objetivo} onGuardar={(v) => guardarPerfil({ objetivo: v })} />
+      </section>
+
+      <section className="tarjeta animate-entrada mb-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="titulo text-2xl">Calorías</h2>
+            <p className="text-suave text-sm">
+              {calorias ? `${kcal(calorias.objetivo)} · ${textoMeta(calorias)}` : 'Aún sin calcular'}
+            </p>
+            {perfil.sexo && (
+              <p className="text-suave mt-0.5 text-xs">
+                {perfil.edad} años · {num(perfil.estatura)} cm · {num(perfil.peso)} kg
+              </p>
+            )}
+          </div>
+          <button onClick={() => setCaloriasAbierto(true)} className="btn-sec !py-2.5">
+            <Icon name="editar" size={16} /> {calorias ? 'Editar' : 'Calcular'}
+          </button>
+        </div>
       </section>
 
       <section className="tarjeta animate-entrada mb-4">
@@ -169,6 +180,9 @@ export default function Ajustes({ perfil }: { perfil: Perfil }) {
         {AVISO_SALUD}
       </p>
 
+      <Sheet abierto={caloriasAbierto} onCerrar={() => setCaloriasAbierto(false)} titulo="Tus calorías">
+        {caloriasAbierto && <EditorCalorias perfil={perfil} onCerrar={() => setCaloriasAbierto(false)} />}
+      </Sheet>
       <Sheet abierto={habitosAbierto} onCerrar={() => setHabitosAbierto(false)} titulo="Mis hábitos">
         <EditorHabitos habitos={todos} />
       </Sheet>

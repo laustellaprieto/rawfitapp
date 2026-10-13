@@ -2,12 +2,23 @@ import Dexie, { type EntityTable } from 'dexie';
 import { HABITOS_INICIALES } from '../data/habitos';
 import { hoyISO } from './fechas';
 
+export type Sexo = 'mujer' | 'hombre';
+export type NivelActividad = 'sedentaria' | 'ligera' | 'moderada' | 'alta' | 'muy-alta';
+export type MetaCalorias = 'definicion' | 'mantenimiento' | 'volumen';
+
 export interface Perfil {
   id: 'main';
   nombre: string;
   fechaInicio: string; // YYYY-MM-DD
   estatura?: number; // cm
   objetivo: string;
+  // Datos para el cálculo de calorías
+  sexo?: Sexo;
+  edad?: number;
+  peso?: number; // kg usado en el cálculo
+  actividad?: NivelActividad;
+  meta?: MetaCalorias;
+  porcentaje?: number; // % de déficit (definición) o superávit (volumen)
   onboardingCompleto: boolean;
   ultimaCopia?: string; // ISO
 }
