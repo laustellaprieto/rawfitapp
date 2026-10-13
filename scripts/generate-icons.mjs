@@ -1,29 +1,31 @@
-// Genera los íconos PNG de la PWA a partir de un SVG (usa sharp).
+// Genera los íconos de la PWA a partir del logo de la marca (assets/logo.png) con sharp.
+// Para cambiar el ícono: reemplaza assets/logo.png (PNG con fondo transparente) y ejecuta `npm run icons`.
 import sharp from 'sharp';
 
-const svg = (size, { maskable = false } = {}) => {
-  const pad = maskable ? 0.18 : 0;
-  const s = 512;
-  const inner = s * (1 - pad * 2);
-  const off = s * pad;
-  return Buffer.from(`
-<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${s} ${s}">
-  <rect width="${s}" height="${s}" rx="${maskable ? 0 : 112}" fill="#111111"/>
-  <g transform="translate(${off} ${off}) scale(${inner / s})">
-    <rect x="40" y="40" width="432" height="432" rx="88" fill="none" stroke="#C9A96E" stroke-width="10" opacity="0.5"/>
-    <text x="256" y="335" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="250" fill="#C9A96E" letter-spacing="8">RF</text>
-    <rect x="166" y="372" width="180" height="8" rx="4" fill="#E8D9B5"/>
-  </g>
-</svg>`);
-};
+const LOGO = 'assets/logo.png';
+const FONDO = '#111111';
 
-const out = [
-  ['public/pwa-192.png', 192, {}],
-  ['public/pwa-512.png', 512, {}],
-  ['public/pwa-maskable-512.png', 512, { maskable: true }],
-  ['public/apple-touch-icon.png', 180, { maskable: true }],
-];
-for (const [file, size, opts] of out) {
-  await sharp(svg(size, opts)).png().toFile(file);
-  console.log('✓', file);
+/** Logo centrado sobre fondo oscuro; `escala` = alto del logo respecto al ícono. */
+async function icono(archivo, tam, escala, { redondeado = false } = {}) {
+  const alto = Math.round(tam * escala);
+  const logo = await sharp(LOGO).resize({ height: alto, width: alto, fit: 'inside' }).toBuffer();
+  const meta = await sharp(logo).metadata();
+  let img = sharp({ create: { width: tam, height: tam, channels: 4, background: FONDO } }).composite([
+    { input: logo, left: Math.round((tam - meta.width) / 2), top: Math.round((tam - meta.height) / 2) },
+  ]);
+  if (redondeado) {
+    const r = Math.round(tam * 0.22);
+    const mascara = Buffer.from(`<svg width="${tam}" height="${tam}"><rect width="${tam}" height="${tam}" rx="${r}" fill="#fff"/></svg>`);
+    img = sharp(await img.png().toBuffer()).composite([{ input: mascara, blend: 'dest-in' }]);
+  }
+  await img.png().toFile(archivo);
+  console.log('✓', archivo);
 }
+
+await icono('public/pwa-192.png', 192, 0.72);
+await icono('public/pwa-512.png', 512, 0.72);
+// Android recorta los íconos "maskable": el logo va más chico para quedar dentro de la zona segura.
+await icono('public/pwa-maskable-512.png', 512, 0.56);
+// iPhone (pantalla de inicio): fondo opaco, iOS redondea las esquinas solo.
+await icono('public/apple-touch-icon.png', 180, 0.66);
+await icono('public/favicon.png', 64, 0.8, { redondeado: true });

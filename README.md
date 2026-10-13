@@ -76,7 +76,7 @@ npm install
 npm run dev       # servidor de desarrollo
 npm run build     # verificación de tipos + build de producción en dist/
 npm run preview   # sirve el build (con service worker)
-npm run icons     # regenera los íconos PNG de la PWA
+npm run icons     # regenera los íconos de la PWA a partir de assets/logo.png
 ```
 
 Stack: React + Vite + TypeScript + Tailwind CSS v4, Dexie, Recharts y vite-plugin-pwa. Fuentes (Bebas Neue e Inter) incluidas localmente para funcionar sin conexión.
