@@ -1,0 +1,106 @@
+@import 'tailwindcss';
+@import '@fontsource/bebas-neue/400.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+
+@theme {
+  --color-fondo: #111111;
+  --color-tarjeta: #1c1c1c;
+  --color-campo: #2b2b2b;
+  --color-borde: #2a2a2a;
+  --color-dorado: #c9a96e;
+  --color-champagne: #e8d9b5;
+  --color-texto: #f2f2f2;
+  --color-suave: #8c8c8c;
+  --color-baja: #7cc48a;
+  --color-sube: #e07a5f;
+
+  --font-titulo: 'Bebas Neue', 'Archivo Black', Impact, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --animate-pop: pop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-entrada: entrada 0.35s ease-out both;
+  --animate-hoja: hoja 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-brillo: brillo 0.7s ease-out;
+
+  @keyframes pop {
+    0% { transform: scale(0.6); }
+    60% { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+  @keyframes entrada {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes hoja {
+    from { transform: translateY(100%); }
+    to { transform: none; }
+  }
+  @keyframes brillo {
+    0% { box-shadow: 0 0 0 0 rgb(201 169 110 / 0.55); }
+    100% { box-shadow: 0 0 0 14px rgb(201 169 110 / 0); }
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-fondo text-texto font-sans antialiased;
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+  }
+  input,
+  select,
+  textarea {
+    font-size: 16px; /* evita el zoom automático en iOS */
+  }
+  input[type='date']::-webkit-calendar-picker-indicator {
+    filter: invert(0.75) sepia(0.4) saturate(2) hue-rotate(5deg);
+  }
+  ::selection {
+    background: rgb(201 169 110 / 0.35);
+  }
+}
+
+@utility tarjeta {
+  @apply bg-tarjeta rounded-3xl border border-white/[0.04] p-4;
+}
+@utility campo {
+  @apply bg-campo text-texto w-full rounded-xl border border-transparent px-3.5 py-3 outline-none transition placeholder:text-suave/70 focus:border-dorado/60;
+}
+@utility etiqueta {
+  @apply text-suave mb-1.5 block text-xs font-medium tracking-wide uppercase;
+}
+@utility titulo {
+  @apply font-titulo tracking-wide;
+}
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition active:scale-[0.97] disabled:opacity-40;
+}
+@utility btn-oro {
+  @apply btn bg-dorado text-fondo hover:bg-champagne;
+}
+@utility btn-sec {
+  @apply btn bg-campo text-texto hover:bg-[#333];
+}
+@utility btn-peligro {
+  @apply btn text-sube bg-sube/10 hover:bg-sube/20;
+}
+@utility chip {
+  @apply rounded-full px-3 py-1.5 text-xs font-semibold transition;
+}
+
+.scroll-x {
+  scrollbar-width: none;
+}
+.scroll-x::-webkit-scrollbar {
+  display: none;
+}
+.pb-segura {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 6rem);
+}

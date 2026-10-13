@@ -1,0 +1,44 @@
+{
+  "name": "rawfit-kit-seguimiento",
+  "version": "1.0.0",
+  "description": "RawFit · Kit de Seguimiento — PWA para registrar hábitos, medidas, fotos y entrenamientos",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "icons": "node scripts/generate-icons.mjs",
+    "typecheck": "tsc -b"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/laustellaprieto/rawfitapp.git"
+  },
+  "author": "@rawfit.stella",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/laustellaprieto/rawfitapp/issues"
+  },
+  "homepage": "https://github.com/laustellaprieto/rawfitapp#readme",
+  "dependencies": {
+    "@fontsource/bebas-neue": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
+    "dexie": "^4.4.6",
+    "dexie-react-hooks": "^4.4.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^3.10.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^6.1.2",
+    "sharp": "^0.35.5",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vite-plugin-pwa": "^2.0.0"
+  },
+  "private": true,
+  "type": "module"
+}
