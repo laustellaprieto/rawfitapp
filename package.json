@@ -1,7 +1,7 @@
 {
-  "name": "rawfit-kit-seguimiento",
+  "name": "rawfit-app",
   "version": "1.0.0",
-  "description": "RawFit · Kit de Seguimiento — PWA para registrar hábitos, medidas, fotos y entrenamientos",
+  "description": "RawFit App — PWA para registrar hábitos, medidas, fotos, nutrición y entrenamientos",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

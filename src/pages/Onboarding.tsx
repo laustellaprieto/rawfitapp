@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import logo from '../../assets/logo.png';
 import { calcularMacros, valido } from '../lib/calorias';
 import { db, guardarPerfil, type Perfil, type Sexo } from '../lib/db';
 import { hoyISO } from '../lib/fechas';
@@ -70,7 +71,10 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col px-5 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
       <div className="mb-8 flex items-center justify-between">
-        <span className="titulo text-dorado text-2xl">RAWFIT</span>
+        <span className="flex items-center gap-2">
+          <img src={logo} alt="" className="h-7 w-auto" />
+          <span className="titulo text-dorado text-2xl">RAWFIT</span>
+        </span>
         <div className="flex gap-1.5" aria-label={`Paso ${paso + 1} de ${PASOS}`}>
           {Array.from({ length: PASOS }, (_, i) => (
             <span key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === paso ? 'bg-dorado w-6' : i < paso ? 'bg-dorado/60 w-1.5' : 'w-1.5 bg-[#333]'}`} />
@@ -81,7 +85,7 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
       <form key={paso} onSubmit={siguiente} className="animate-entrada flex flex-1 flex-col">
         {paso === 0 && (
           <>
-            <p className="text-suave text-xs font-medium tracking-[0.2em] uppercase">Kit de seguimiento</p>
+            <p className="text-suave text-xs font-medium tracking-[0.2em] uppercase">RawFit App</p>
             <h1 className="titulo mt-1 text-5xl leading-none">Te damos la bienvenida</h1>
             <p className="text-suave mt-3 mb-8">Aquí vas a registrar tus hábitos, medidas, fotos y entrenos. Todo se guarda solo en tu celular.</p>
             <label className="etiqueta" htmlFor="o-nombre">¿Cómo te llamas?</label>
@@ -159,7 +163,7 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
         {paso === 3 && (
           <>
             <h1 className="titulo text-5xl leading-none">Tus hábitos</h1>
-            <p className="text-suave mt-3 mb-6">Estos son los 10 hábitos del kit. Cámbialos, quita o agrega los que quieras. Después puedes editarlos en Ajustes.</p>
+            <p className="text-suave mt-3 mb-6">Estos son los 10 hábitos recomendados. Cámbialos, quita o agrega los que quieras. Después puedes editarlos en Ajustes.</p>
             <EditorHabitos habitos={todos} />
           </>
         )}

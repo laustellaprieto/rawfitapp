@@ -12,7 +12,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'apple-touch-icon.png'],
       manifest: {
-        name: 'RawFit · Kit de Seguimiento',
+        name: 'RawFit App',
         short_name: 'RawFit',
         description:
           'Registra tus hábitos, medidas, fotos de progreso y entrenamientos. Todo se guarda en tu dispositivo. Por Stella Prieto (@rawfit.stella).',

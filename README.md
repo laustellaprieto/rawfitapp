@@ -1,6 +1,6 @@
-# RawFit · Kit de Seguimiento
+# RawFit App
 
-App web instalable (PWA) de **Stella Prieto · Entrenadora deportiva · [@rawfit.stella](https://instagram.com/rawfit.stella)** para registrar hábitos, medidas, fotos de progreso y entrenamientos desde el celular. Es la versión app de la plantilla de Excel del kit.
+App web instalable (PWA) de **Stella Prieto · Entrenadora deportiva · [@rawfit.stella](https://instagram.com/rawfit.stella)** para registrar hábitos, medidas, fotos de progreso y entrenamientos desde el celular.
 
 - **Sin cuenta ni servidor:** todo (fotos incluidas) se guarda en el dispositivo con IndexedDB (Dexie).
 - **Funciona sin internet** una vez abierta o instalada.
@@ -41,19 +41,19 @@ No necesitas instalar nada en tu computadora: todo se hace desde el navegador. E
 4. En la lista aparece **rawfitapp**: toca **Import**. (Si no aparece, toca *Adjust GitHub App Permissions* y dale acceso a ese repositorio).
 5. Vercel detecta todo solo (Framework: *Vite*). No cambies nada y toca **Deploy**.
 6. Espera 1–2 minutos. Verás confeti 🎉 y un link tipo `rawfitapp.vercel.app`. ¡Esa es tu app!
-7. *(Opcional)* Para un nombre más bonito: en el proyecto, **Settings → Domains → Edit** y cámbialo, por ejemplo, a `rawfit-kit.vercel.app` (si está libre).
+7. *(Opcional)* Para un nombre más bonito: en el proyecto, **Settings → Domains → Edit** y cámbialo, por ejemplo, a `rawfit-app.vercel.app` (si está libre).
 
 ### Opción B: Netlify
 
 1. Entra a **netlify.com** → **Sign up** → **GitHub**.
 2. Toca **Add new site → Import an existing project → GitHub** y elige **rawfitapp**.
 3. Netlify lee la configuración del archivo `netlify.toml` (Build command `npm run build`, Publish directory `dist`). Toca **Deploy**.
-4. En 1–2 minutos tendrás un link tipo `nombre-raro.netlify.app`. Cámbialo en **Site configuration → Change site name** (por ejemplo, `rawfit-kit`).
+4. En 1–2 minutos tendrás un link tipo `nombre-raro.netlify.app`. Cámbialo en **Site configuration → Change site name** (por ejemplo, `rawfit-app`).
 
 ### Ponerla en tu bio de Instagram
 
 1. Abre Instagram → tu perfil → **Editar perfil → Enlaces → Agregar enlace externo**.
-2. Pega el link (por ejemplo, `https://rawfit-kit.vercel.app`) y ponle de título **“Kit de Seguimiento”**.
+2. Pega el link (por ejemplo, `https://rawfit-app.vercel.app`) y ponle de título **“RawFit App”**.
 3. Guarda. ¡Listo!
 
 ### Qué decirle a tu comunidad para instalarla

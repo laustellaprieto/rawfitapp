@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import logo from '../assets/logo.png';
 import { Celebracion } from './components/Celebracion';
 import { Icon, type IconName } from './components/Icon';
 import { PiePagina } from './components/ui';
@@ -61,9 +62,9 @@ export default function App() {
   return (
     <div className="mx-auto min-h-dvh max-w-2xl">
       <div className="bg-fondo/85 sticky top-0 z-30 flex items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3 backdrop-blur-md sm:px-6">
-        <button onClick={() => ir('hoy')} className="flex items-baseline gap-2">
+        <button onClick={() => ir('hoy')} className="flex items-center gap-2" aria-label="RawFit App, ir a Hoy">
+          <img src={logo} alt="" className="h-7 w-auto" />
           <span className="titulo text-dorado text-2xl leading-none">RAWFIT</span>
-          <span className="text-suave text-[10px] font-medium tracking-[0.25em] uppercase">Kit de seguimiento</span>
         </button>
         <button
           onClick={() => ir('ajustes')}

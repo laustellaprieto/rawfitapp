@@ -69,7 +69,7 @@ export default function Ajustes({ perfil }: { perfil: Perfil }) {
 
   return (
     <>
-      <Encabezado subtitulo="Tu kit, a tu manera" titulo="Ajustes" />
+      <Encabezado subtitulo="Tu app, a tu manera" titulo="Ajustes" />
 
       <section className="tarjeta animate-entrada mb-4 flex flex-col gap-4">
         <h2 className="titulo text-2xl">Mis datos</h2>
