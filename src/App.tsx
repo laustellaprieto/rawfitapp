@@ -8,7 +8,7 @@ import Ajustes from './pages/Ajustes';
 import Habitos from './pages/Habitos';
 import Hoy from './pages/Hoy';
 import Onboarding from './pages/Onboarding';
-import Proximamente from './pages/Proximamente';
+import Ejercicios from './pages/Ejercicios';
 import Progreso from './pages/progreso/Progreso';
 import Entreno from './pages/entreno/Entreno';
 
@@ -74,12 +74,12 @@ export default function App() {
         </button>
       </div>
 
-      <main key={pagina} data-accion={accion} className="pb-segura px-4 pt-2 sm:px-6">
+      <main key={pagina} className="pb-segura px-4 pt-2 sm:px-6">
         {pagina === 'hoy' && <Hoy perfil={perfil} ir={ir} />}
         {pagina === 'habitos' && <Habitos ir={ir} />}
         {pagina === 'progreso' && <Progreso perfil={perfil} accion={accion} />}
         {pagina === 'entreno' && <Entreno accion={accion} />}
-        {pagina === 'ejercicios' && <Proximamente titulo="Ejercicios" icono="lista" />}
+        {pagina === 'ejercicios' && <Ejercicios />}
         {pagina === 'ajustes' && <Ajustes perfil={perfil} />}
         <PiePagina />
       </main>
