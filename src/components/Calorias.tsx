@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { ACTIVIDADES, calcularCalorias, kcal, METAS, textoMeta, valido, type ResultadoCalorias } from '../lib/calorias';
+import { ACTIVIDADES, calcularCalorias, calcularMacros, kcal, METAS, opcionesRango, textoMeta, valido, type ResultadoCalorias, type ResultadoMacros } from '../lib/calorias';
 import { guardarPerfil, type MetaCalorias, type NivelActividad, type Perfil, type Sexo } from '../lib/db';
-import { numTxt, parseNum } from '../lib/format';
+import { num, numTxt, parseNum } from '../lib/format';
 import { Icon } from './Icon';
 
 /** Datos de texto del formulario (los números se guardan como texto mientras se escriben). */
@@ -13,6 +13,8 @@ export interface DatosCaloriasTxt {
   actividad: NivelActividad;
   meta: MetaCalorias;
   porcentaje: number;
+  proteinaGkg?: number;
+  grasaPct?: number;
 }
 
 const Opcion = ({ activa, onClick, children, className = '' }: { activa: boolean; onClick: () => void; children: React.ReactNode; className?: string }) => (
@@ -20,7 +22,7 @@ const Opcion = ({ activa, onClick, children, className = '' }: { activa: boolean
     type="button"
     onClick={onClick}
     aria-pressed={activa}
-    className={`rounded-xl border px-3 py-2.5 text-left text-sm transition active:scale-[0.98] ${activa ? 'border-dorado bg-dorado/12 text-champagne' : 'bg-campo text-texto border-transparent'} ${className}`}
+    className={`rounded-xl border px-3 py-2.5 text-sm transition active:scale-[0.98] ${activa ? 'border-dorado bg-dorado/12 text-champagne' : 'bg-campo text-texto border-transparent'} ${className}`}
   >
     {children}
   </button>
@@ -35,7 +37,7 @@ export function SelectorMeta({ datos, onChange }: { datos: DatosCaloriasTxt; onC
         <span className="etiqueta">Nivel de actividad</span>
         <div className="flex flex-col gap-1.5">
           {ACTIVIDADES.map((a) => (
-            <Opcion key={a.valor} activa={datos.actividad === a.valor} onClick={() => onChange({ actividad: a.valor })} className="flex items-center justify-between gap-2">
+            <Opcion key={a.valor} activa={datos.actividad === a.valor} onClick={() => onChange({ actividad: a.valor })} className="flex items-center justify-between gap-2 text-left">
               <span className="font-semibold">{a.nombre}</span>
               <span className="text-suave text-right text-xs">{a.detalle}</span>
             </Opcion>
@@ -47,7 +49,7 @@ export function SelectorMeta({ datos, onChange }: { datos: DatosCaloriasTxt; onC
         <span className="etiqueta">Tu meta</span>
         <div className="grid grid-cols-3 gap-1.5">
           {METAS.map((m) => (
-            <Opcion key={m.valor} activa={datos.meta === m.valor} onClick={() => onChange({ meta: m.valor, porcentaje: m.porDefecto })} className="text-center">
+            <Opcion key={m.valor} activa={datos.meta === m.valor} onClick={() => onChange({ meta: m.valor, porcentaje: m.porDefecto, proteinaGkg: undefined, grasaPct: undefined })} className="text-center">
               <span className="block font-semibold">{m.nombre}</span>
               <span className="text-suave block text-[10px] leading-tight">{m.detalle}</span>
             </Opcion>
@@ -118,6 +120,8 @@ export function EditorCalorias({ perfil, onCerrar }: { perfil: Perfil; onCerrar:
     actividad: perfil.actividad ?? 'ligera',
     meta: perfil.meta ?? 'mantenimiento',
     porcentaje: perfil.porcentaje ?? 0,
+    proteinaGkg: perfil.proteinaGkg,
+    grasaPct: perfil.grasaPct,
   });
   const cambiar = (x: Partial<DatosCaloriasTxt>) => setD((v) => ({ ...v, ...x }));
   const edad = parseNum(d.edad);
@@ -125,11 +129,22 @@ export function EditorCalorias({ perfil, onCerrar }: { perfil: Perfil; onCerrar:
   const estatura = parseNum(d.estatura);
   const ok = !!d.sexo && valido.edad(edad) && valido.peso(peso) && valido.estatura(estatura);
   const r = ok ? resultadoDe(d, parseNum) : undefined;
+  const m = r && peso ? calcularMacros(r.objetivo, peso, r.meta, d.proteinaGkg, d.grasaPct) : undefined;
 
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ok) return;
-    await guardarPerfil({ sexo: d.sexo, edad, peso, estatura, actividad: d.actividad, meta: d.meta, porcentaje: d.porcentaje });
+    await guardarPerfil({
+      sexo: d.sexo,
+      edad,
+      peso,
+      estatura,
+      actividad: d.actividad,
+      meta: d.meta,
+      porcentaje: d.porcentaje,
+      proteinaGkg: m?.proteinaGkg,
+      grasaPct: m?.grasaPct,
+    });
     onCerrar();
   };
 
@@ -164,9 +179,110 @@ export function EditorCalorias({ perfil, onCerrar }: { perfil: Perfil; onCerrar:
       {!ok && <p className="text-suave -mt-3 text-xs">Completa sexo, edad (14–100), estatura (100–250 cm) y peso (30–300 kg).</p>}
       <SelectorMeta datos={d} onChange={cambiar} />
       {r && <ResultadoCaloriasTarjeta r={r} />}
+      {m && <Macros m={m} onChange={cambiar} />}
       <button className="btn-oro w-full" disabled={!ok}>
         Guardar
       </button>
     </form>
+  );
+}
+
+const COLORES_MACRO = { proteina: '#C9A96E', carbos: '#F2F2F2', grasa: '#8C8C8C' } as const;
+const fmt = (n: number) => num(n, 1);
+
+/** Macros del día con su rango recomendado según la meta. Si recibe onChange, se pueden ajustar. */
+export function Macros({ m, onChange }: { m: ResultadoMacros; onChange?: (d: Partial<DatosCaloriasTxt>) => void }) {
+  const { rango } = m;
+  const filas = [
+    {
+      clave: 'proteina' as const,
+      nombre: 'Proteína',
+      macro: m.proteina,
+      detalle: `${fmt(m.proteina.gPorKg)} g/kg`,
+      rangoTxt: `${fmt(rango.proteina.min)}–${fmt(rango.proteina.max)} g por kg de peso`,
+      opciones: opcionesRango(rango.proteina),
+      elegido: m.proteinaGkg,
+      formato: (v: number) => v.toLocaleString('es', { minimumFractionDigits: 1 }),
+      cambiar: (v: number) => onChange?.({ proteinaGkg: v }),
+    },
+    {
+      clave: 'carbos' as const,
+      nombre: 'Carbohidratos',
+      macro: m.carbos,
+      detalle: `${fmt(m.carbos.gPorKg)} g/kg`,
+      rangoTxt: `${fmt(rango.carbos.min)}–${fmt(rango.carbos.max)} g por kg de peso`,
+    },
+    {
+      clave: 'grasa' as const,
+      nombre: 'Grasa',
+      macro: m.grasa,
+      detalle: `${fmt(m.grasa.gPorKg)} g/kg`,
+      rangoTxt: `${rango.grasa.min}–${rango.grasa.max} % de las calorías`,
+      opciones: opcionesRango(rango.grasa),
+      elegido: m.grasaPct,
+      formato: (v: number) => `${v} %`,
+      cambiar: (v: number) => onChange?.({ grasaPct: v }),
+    },
+  ];
+
+  return (
+    <div className="bg-campo/40 rounded-2xl border border-white/5 p-4">
+      <p className="text-dorado text-[11px] font-semibold tracking-wider uppercase">Tus macros del día</p>
+
+      {/* Reparto de calorías */}
+      <div className="mt-3 flex h-3 gap-0.5 overflow-hidden rounded-full" role="img" aria-label={`Proteína ${m.proteina.pct} %, carbohidratos ${m.carbos.pct} %, grasa ${m.grasa.pct} %`}>
+        {filas.map((f) => (
+          <div key={f.clave} style={{ width: `${f.macro.pct}%`, background: COLORES_MACRO[f.clave] }} className="transition-all duration-500" />
+        ))}
+      </div>
+
+      <div className="mt-4 flex flex-col gap-4">
+        {filas.map((f) => (
+          <div key={f.clave}>
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <span className="size-2.5 rounded-full" style={{ background: COLORES_MACRO[f.clave] }} />
+                {f.nombre}
+              </span>
+              <span className="titulo text-2xl leading-none">
+                {f.macro.gramos}
+                <span className="text-suave ml-0.5 font-sans text-xs font-medium">g</span>
+              </span>
+            </div>
+            <p className="text-suave mt-0.5 text-xs">
+              {f.detalle} · {f.macro.kcal.toLocaleString('es')} kcal · {f.macro.pct} %
+            </p>
+            <p className="mt-1 text-xs">
+              <span className="text-suave">Rango recomendado: </span>
+              <span className="text-texto">{f.rangoTxt}</span>
+              {f.clave === 'carbos' && (
+                <span
+                  className={`ml-1.5 inline-block rounded-full px-1.5 py-px text-[10px] font-semibold ${
+                    m.estadoCarbos === 'ok' ? 'bg-baja/10 text-baja' : 'bg-dorado/10 text-dorado'
+                  }`}
+                >
+                  {m.estadoCarbos === 'ok' ? 'dentro del rango' : m.estadoCarbos === 'bajo' ? 'por debajo' : 'por encima'}
+                </span>
+              )}
+            </p>
+            {onChange && f.opciones && (
+              <div className="mt-2 flex gap-1.5">
+                {f.opciones.map((v) => (
+                  <Opcion key={v} activa={Math.abs((f.elegido ?? 0) - v) < 1e-9} onClick={() => f.cambiar!(v)} className="flex-1 !py-1.5 text-center text-xs font-semibold tabular-nums">
+                    {f.formato!(v)}
+                  </Opcion>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <p className="text-suave mt-4 text-[11px] leading-relaxed">
+        {onChange ? 'Elige la proteína y la grasa dentro del rango; los carbohidratos completan tus calorías. ' : ''}
+        {m.estadoCarbos === 'bajo' && 'Tus carbohidratos quedan bajos para tu meta: si entrenas fuerte, considera menos grasa o un déficit menor. '}
+        Rangos según ISSN (Jäger et al., 2017), Institute of Medicine y ACSM (Thomas et al., 2016).
+      </p>
+    </div>
   );
 }

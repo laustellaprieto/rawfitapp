@@ -57,3 +57,95 @@ export const valido = {
   estatura: (n?: number) => n !== undefined && n >= 100 && n <= 250,
   edad: (n?: number) => n !== undefined && n >= 14 && n <= 100,
 };
+
+/* ───────────── Macros ───────────── */
+
+export interface RangoMacros {
+  proteina: { min: number; max: number; porDefecto: number; paso: number }; // g por kg de peso
+  grasa: { min: number; max: number; porDefecto: number; paso: number }; // % de las calorías
+  carbos: { min: number; max: number }; // g por kg de peso (referencia)
+}
+
+/**
+ * Rangos recomendados por meta.
+ * Proteína: ISSN (Jäger et al., 2017) — 1,4–2,0 g/kg para personas activas y más alto en déficit.
+ * Grasa: 20–35 % de las calorías (rango aceptable, Institute of Medicine).
+ * Carbohidratos: lo que queda; referencia según Thomas et al. (2016, ACSM).
+ */
+export const RANGOS_MACROS: Record<MetaCalorias, RangoMacros> = {
+  definicion: {
+    proteina: { min: 1.8, max: 2.4, porDefecto: 2.2, paso: 0.2 },
+    grasa: { min: 20, max: 30, porDefecto: 25, paso: 5 },
+    carbos: { min: 2, max: 4 },
+  },
+  mantenimiento: {
+    proteina: { min: 1.6, max: 2.0, porDefecto: 1.8, paso: 0.2 },
+    grasa: { min: 25, max: 35, porDefecto: 30, paso: 5 },
+    carbos: { min: 3, max: 5 },
+  },
+  volumen: {
+    proteina: { min: 1.6, max: 2.2, porDefecto: 2.0, paso: 0.2 },
+    grasa: { min: 20, max: 30, porDefecto: 25, paso: 5 },
+    carbos: { min: 4, max: 7 },
+  },
+};
+
+/** Valores entre min y max con el paso indicado (para los botones). */
+export function opcionesRango(r: { min: number; max: number; paso: number }): number[] {
+  const out: number[] = [];
+  for (let v = r.min; v <= r.max + 1e-9; v += r.paso) out.push(Math.round(v * 10) / 10);
+  return out;
+}
+
+const ajustar = (v: number | undefined, r: { min: number; max: number; porDefecto: number }) =>
+  v === undefined || v < r.min - 1e-9 || v > r.max + 1e-9 ? r.porDefecto : v;
+
+export interface Macro {
+  gramos: number;
+  kcal: number;
+  pct: number; // % de las calorías del día
+  gPorKg: number;
+}
+
+export interface ResultadoMacros {
+  proteina: Macro;
+  grasa: Macro;
+  carbos: Macro;
+  proteinaGkg: number; // valor elegido (ya ajustado al rango)
+  grasaPct: number;
+  rango: RangoMacros;
+  estadoCarbos: 'bajo' | 'ok' | 'alto';
+}
+
+/** Proteína y grasa según lo elegido; los carbohidratos completan las calorías del día. */
+export function calcularMacros(kcalDia: number, peso: number, meta: MetaCalorias, proteinaGkg?: number, grasaPct?: number): ResultadoMacros {
+  const rango = RANGOS_MACROS[meta];
+  const pGkg = ajustar(proteinaGkg, rango.proteina);
+  const gPct = ajustar(grasaPct, rango.grasa);
+  const pG = Math.round(pGkg * peso);
+  const gG = Math.round((kcalDia * gPct) / 100 / 9);
+  const cG = Math.max(0, Math.round((kcalDia - pG * 4 - gG * 9) / 4));
+  const macro = (gramos: number, porGramo: number): Macro => ({
+    gramos,
+    kcal: gramos * porGramo,
+    pct: Math.round(((gramos * porGramo) / kcalDia) * 100),
+    gPorKg: Math.round((gramos / peso) * 10) / 10,
+  });
+  const carbos = macro(cG, 4);
+  return {
+    proteina: macro(pG, 4),
+    grasa: macro(gG, 9),
+    carbos,
+    proteinaGkg: pGkg,
+    grasaPct: gPct,
+    rango,
+    estadoCarbos: carbos.gPorKg < rango.carbos.min ? 'bajo' : carbos.gPorKg > rango.carbos.max ? 'alto' : 'ok',
+  };
+}
+
+/** Macros del perfil guardado (si se pueden calcular). */
+export function macrosDelPerfil(p: Pick<Perfil, 'sexo' | 'peso' | 'estatura' | 'edad' | 'actividad' | 'meta' | 'porcentaje' | 'proteinaGkg' | 'grasaPct'>) {
+  const r = calcularCalorias(p);
+  if (!r || !p.peso) return undefined;
+  return calcularMacros(r.objetivo, p.peso, r.meta, p.proteinaGkg, p.grasaPct);
+}

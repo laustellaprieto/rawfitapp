@@ -10,8 +10,8 @@ App web instalable (PWA) de **Stella Prieto · Entrenadora deportiva · [@rawfit
 
 | Sección | Qué hace |
 |---|---|
-| Onboarding | Nombre, fecha de inicio, sexo, edad, estatura, peso, objetivo, cálculo de calorías (basales, mantenimiento y meta: definición, mantenimiento o volumen con su %) y los 10 hábitos (editables) |
-| Hoy | Saludo con el día del reto, checklist, anillo de % del día, racha (≥ 80 %) con logros y felicitaciones (1, 7, 15, 30 días y cada mes), calorías del día, accesos rápidos y aviso de foto cada 15 días |
+| Onboarding | Nombre, fecha de inicio, sexo, edad, estatura, peso, objetivo, cálculo de calorías (basales, mantenimiento y meta: definición, mantenimiento o volumen con su %) y macros con rangos recomendados según la meta y los 10 hábitos (editables) |
+| Hoy | Saludo con el día del reto, checklist, anillo de % del día, racha (≥ 80 %) con logros y felicitaciones (1, 7, 15, 30 días y cada mes), calorías y macros del día, accesos rápidos y aviso de foto cada 15 días |
 | Hábitos | Cuadrícula mensual hábitos × días, % por hábito, por día y del mes |
 | Progreso | Peso, cintura y abdomen; resumen, gráficas, análisis automático, cintura/estatura; check-ins de fotos (frente, perfil, espalda) con comparador antes/después |
 | Entreno | Sesiones con ejercicios del banco, series con reps, kg y RIR; volumen, historial, récords y volumen por grupo muscular |

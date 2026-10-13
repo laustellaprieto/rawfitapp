@@ -19,6 +19,8 @@ export interface Perfil {
   actividad?: NivelActividad;
   meta?: MetaCalorias;
   porcentaje?: number; // % de déficit (definición) o superávit (volumen)
+  proteinaGkg?: number; // g de proteína por kg de peso
+  grasaPct?: number; // % de las calorías que vienen de grasa
   onboardingCompleto: boolean;
   ultimaCopia?: string; // ISO
 }

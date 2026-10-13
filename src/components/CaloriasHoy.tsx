@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
-import { calcularCalorias, kcal, textoMeta } from '../lib/calorias';
+import { calcularCalorias, kcal, macrosDelPerfil, textoMeta } from '../lib/calorias';
 import { db, guardarPerfil, type Perfil } from '../lib/db';
 import { num } from '../lib/format';
 import { EditorCalorias } from './Calorias';
@@ -12,6 +12,7 @@ export function CaloriasHoy({ perfil }: { perfil: Perfil }) {
   const [abierto, setAbierto] = useState(false);
   const ultimoPeso = useLiveQuery(() => db.mediciones.orderBy('fecha').filter((m) => m.peso !== undefined).last(), [])?.peso;
   const r = calcularCalorias(perfil);
+  const m = macrosDelPerfil(perfil);
   const pesoCambio = r && ultimoPeso !== undefined && perfil.peso !== undefined && Math.abs(ultimoPeso - perfil.peso) >= 0.5;
 
   return (
@@ -34,6 +35,28 @@ export function CaloriasHoy({ perfil }: { perfil: Perfil }) {
                 <Icon name="editar" size={16} /> Ajustar
               </button>
             </div>
+            {m && (
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {(
+                  [
+                    ['Proteína', m.proteina.gramos, '#C9A96E'],
+                    ['Carbohidratos', m.carbos.gramos, '#F2F2F2'],
+                    ['Grasa', m.grasa.gramos, '#8C8C8C'],
+                  ] as const
+                ).map(([n, g, c]) => (
+                  <div key={n} className="bg-campo/60 rounded-xl px-2.5 py-2">
+                    <p className="text-suave flex items-center gap-1.5 text-[10px] font-medium">
+                      <span className="size-2 rounded-full" style={{ background: c }} />
+                      {n}
+                    </p>
+                    <p className="titulo mt-0.5 text-2xl leading-none">
+                      {g}
+                      <span className="text-suave ml-0.5 font-sans text-[10px] font-medium">g</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
             {pesoCambio && (
               <button
                 onClick={() => guardarPerfil({ peso: ultimoPeso })}

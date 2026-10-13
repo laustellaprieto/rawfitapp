@@ -7,7 +7,7 @@ import { num } from '../lib/format';
 import { useHabitos } from '../lib/hooks';
 import { EditorCalorias } from '../components/Calorias';
 import { EditorHabitos } from '../components/EditorHabitos';
-import { calcularCalorias, kcal, textoMeta } from '../lib/calorias';
+import { calcularCalorias, kcal, macrosDelPerfil, textoMeta } from '../lib/calorias';
 import { Icon } from '../components/Icon';
 import { Sheet } from '../components/Sheet';
 import { Encabezado } from '../components/ui';
@@ -29,6 +29,7 @@ export default function Ajustes({ perfil }: { perfil: Perfil }) {
   const [habitosAbierto, setHabitosAbierto] = useState(false);
   const [caloriasAbierto, setCaloriasAbierto] = useState(false);
   const calorias = calcularCalorias(perfil);
+  const macros = macrosDelPerfil(perfil);
   const [estado, setEstado] = useState<{ tipo: 'ok' | 'error' | 'cargando'; texto: string }>();
 
   const exportar = async () => {
@@ -83,10 +84,15 @@ export default function Ajustes({ perfil }: { perfil: Perfil }) {
       <section className="tarjeta animate-entrada mb-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="titulo text-2xl">Calorías</h2>
+            <h2 className="titulo text-2xl">Calorías y macros</h2>
             <p className="text-suave text-sm">
               {calorias ? `${kcal(calorias.objetivo)} · ${textoMeta(calorias)}` : 'Aún sin calcular'}
             </p>
+            {macros && (
+              <p className="text-suave mt-0.5 text-xs">
+                Proteína {macros.proteina.gramos} g · Carbohidratos {macros.carbos.gramos} g · Grasa {macros.grasa.gramos} g
+              </p>
+            )}
             {perfil.sexo && (
               <p className="text-suave mt-0.5 text-xs">
                 {perfil.edad} años · {num(perfil.estatura)} cm · {num(perfil.peso)} kg

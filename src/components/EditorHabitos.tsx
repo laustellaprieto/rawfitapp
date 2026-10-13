@@ -40,16 +40,12 @@ export function EditorHabitos({ habitos }: { habitos: Habito[] }) {
       <div className="flex flex-col gap-2">
         {habitos.map((h, i) => (
           <div key={h.id} className={`bg-campo/60 flex items-center gap-1.5 rounded-2xl p-1.5 transition ${h.activo ? '' : 'opacity-45'}`}>
-            <select
-              value={h.emoji}
-              onChange={(e) => db.habitos.update(h.id!, { emoji: e.target.value })}
-              className="w-11 shrink-0 appearance-none rounded-xl bg-black/25 py-2 text-center text-lg outline-none"
-              aria-label="Emoji del hábito"
-            >
-              {[...new Set([h.emoji, ...EMOJIS_HABITO])].map((e) => (
-                <option key={e}>{e}</option>
-              ))}
-            </select>
+            <SelectorEmoji
+              valor={h.emoji}
+              onChange={(e) => db.habitos.update(h.id!, { emoji: e })}
+              className="size-10 rounded-xl bg-black/25"
+              etiqueta={`Emoji de ${h.nombre}`}
+            />
             <input
               key={h.nombre}
               defaultValue={h.nombre}
@@ -89,11 +85,7 @@ export function EditorHabitos({ habitos }: { habitos: Habito[] }) {
       <form onSubmit={agregar} className="mt-4">
         <label className="etiqueta" htmlFor="nuevo-habito">Agregar hábito</label>
         <div className="flex gap-2">
-          <select value={emoji} onChange={(e) => setEmoji(e.target.value)} className="campo !w-14 shrink-0 appearance-none !px-0 text-center text-lg" aria-label="Emoji">
-            {EMOJIS_HABITO.map((e) => (
-              <option key={e}>{e}</option>
-            ))}
-          </select>
+          <SelectorEmoji valor={emoji} onChange={setEmoji} className="bg-campo size-12 rounded-xl" etiqueta="Emoji del nuevo hábito" />
           <input id="nuevo-habito" value={nuevo} onChange={(e) => setNuevo(e.target.value)} className="campo" placeholder="Ej.: Estirar 10 minutos" maxLength={50} />
           <button className="btn-oro shrink-0 !px-3.5" aria-label="Agregar hábito" disabled={!nuevo.trim()}>
             <Icon name="mas" size={20} strokeWidth={2.4} />
@@ -102,5 +94,23 @@ export function EditorHabitos({ habitos }: { habitos: Habito[] }) {
       </form>
       <p className="text-suave mt-3 text-xs">Toca el emoji o el nombre para cambiarlos. El interruptor pausa un hábito sin borrar su historial.</p>
     </div>
+  );
+}
+
+/**
+ * Muestra el emoji centrado y abre la lista nativa al tocarlo.
+ * (El texto de un <select> no se puede centrar de forma fiable en iPhone,
+ * así que el select va invisible encima del emoji).
+ */
+function SelectorEmoji({ valor, onChange, className, etiqueta }: { valor: string; onChange: (e: string) => void; className: string; etiqueta: string }) {
+  return (
+    <span className={`relative grid shrink-0 place-items-center text-xl leading-none ${className}`}>
+      <span aria-hidden>{valor}</span>
+      <select value={valor} onChange={(e) => onChange(e.target.value)} className="absolute inset-0 size-full cursor-pointer opacity-0" aria-label={etiqueta}>
+        {[...new Set([valor, ...EMOJIS_HABITO])].map((e) => (
+          <option key={e}>{e}</option>
+        ))}
+      </select>
+    </span>
   );
 }

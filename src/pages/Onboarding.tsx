@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { valido } from '../lib/calorias';
+import { calcularMacros, valido } from '../lib/calorias';
 import { db, guardarPerfil, type Perfil, type Sexo } from '../lib/db';
 import { hoyISO } from '../lib/fechas';
 import { numTxt, parseNum } from '../lib/format';
 import { useHabitos } from '../lib/hooks';
-import { ResultadoCaloriasTarjeta, resultadoDe, SelectorMeta, type DatosCaloriasTxt } from '../components/Calorias';
+import { Macros, ResultadoCaloriasTarjeta, resultadoDe, SelectorMeta, type DatosCaloriasTxt } from '../components/Calorias';
 import { EditorHabitos } from '../components/EditorHabitos';
 import { Icon } from '../components/Icon';
 import { PiePagina } from '../components/ui';
@@ -24,6 +24,8 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
     actividad: perfil.actividad ?? 'ligera',
     meta: perfil.meta ?? 'mantenimiento',
     porcentaje: perfil.porcentaje ?? 0,
+    proteinaGkg: perfil.proteinaGkg,
+    grasaPct: perfil.grasaPct,
   });
   const { todos } = useHabitos();
   const cambiar = (d: Partial<DatosCaloriasTxt>) => setCal((c) => ({ ...c, ...d }));
@@ -33,6 +35,7 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
   const estatura = parseNum(cal.estatura);
   const datosValidos = !!cal.sexo && valido.edad(edad) && valido.peso(peso) && valido.estatura(estatura);
   const resultado = resultadoDe(cal, parseNum);
+  const macros = resultado && peso ? calcularMacros(resultado.objetivo, peso, resultado.meta, cal.proteinaGkg, cal.grasaPct) : undefined;
   const puedeSeguir = [!!(nombre.trim() && fechaInicio), datosValidos, !!resultado, todos.some((h) => h.activo)][paso];
 
   const terminar = async () => {
@@ -47,6 +50,8 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
       actividad: cal.actividad,
       meta: cal.meta,
       porcentaje: cal.porcentaje,
+      proteinaGkg: macros?.proteinaGkg,
+      grasaPct: macros?.grasaPct,
       onboardingCompleto: true,
     });
     // El peso inicial queda también como primera medición.
@@ -140,11 +145,12 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
         {paso === 2 && (
           <>
             <h1 className="titulo text-5xl leading-none">Tus calorías</h1>
-            <p className="text-suave mt-3 mb-6">Elige tu nivel de actividad y tu meta. Lo puedes cambiar cuando quieras en Ajustes.</p>
+            <p className="text-suave mt-3 mb-6">Elige tu nivel de actividad y tu meta. Abajo verás tus calorías y tus macros. Lo puedes cambiar cuando quieras en Ajustes.</p>
             <SelectorMeta datos={cal} onChange={cambiar} />
             {resultado && (
-              <div className="mt-6">
+              <div className="mt-6 flex flex-col gap-4">
                 <ResultadoCaloriasTarjeta r={resultado} />
+                {macros && <Macros m={macros} onChange={cambiar} />}
               </div>
             )}
           </>
