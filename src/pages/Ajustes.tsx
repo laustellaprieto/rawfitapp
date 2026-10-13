@@ -6,6 +6,9 @@ import { fechaRelativa, toISO } from '../lib/fechas';
 import { num } from '../lib/format';
 import { useHabitos } from '../lib/hooks';
 import { EditorCalorias } from '../components/Calorias';
+import { SeccionCuenta } from '../components/Cuenta';
+import { useCuenta } from '../lib/nube';
+import type { Ir } from '../App';
 import { EditorHabitos } from '../components/EditorHabitos';
 import { calcularCalorias, kcal, macrosDelPerfil, textoMeta } from '../lib/calorias';
 import { Icon } from '../components/Icon';
@@ -22,13 +25,14 @@ function useEspacio() {
 
 const mb = (b: number) => `${num(b / 1024 / 1024, 1)} MB`;
 
-export default function Ajustes({ perfil }: { perfil: Perfil }) {
+export default function Ajustes({ perfil, ir }: { perfil: Perfil; ir: Ir }) {
   const usado = useEspacio();
   const { todos } = useHabitos();
   const archivo = useRef<HTMLInputElement>(null);
   const [habitosAbierto, setHabitosAbierto] = useState(false);
   const [caloriasAbierto, setCaloriasAbierto] = useState(false);
   const calorias = calcularCalorias(perfil);
+  const conSesion = !!useCuenta().sesion;
   const macros = macrosDelPerfil(perfil);
   const [estado, setEstado] = useState<{ tipo: 'ok' | 'error' | 'cargando'; texto: string }>();
 
@@ -70,6 +74,8 @@ export default function Ajustes({ perfil }: { perfil: Perfil }) {
   return (
     <>
       <Encabezado subtitulo="Tu app, a tu manera" titulo="Ajustes" />
+
+      <SeccionCuenta onAbrirCoach={() => ir('coach')} />
 
       <section className="tarjeta animate-entrada mb-4 flex flex-col gap-4">
         <h2 className="titulo text-2xl">Mis datos</h2>
@@ -173,13 +179,13 @@ export default function Ajustes({ perfil }: { perfil: Perfil }) {
         </ul>
       </section>
 
-      <section className="tarjeta animate-entrada mb-4">
+      {!conSesion && <section className="tarjeta animate-entrada mb-4">
         <h2 className="titulo text-sube mb-2 text-2xl">Borrar datos</h2>
         <p className="text-suave mb-3 text-sm">Borra hábitos, mediciones, fotos y entrenos de este dispositivo y vuelve a empezar.</p>
         <button onClick={borrar} className="btn-peligro w-full">
           <Icon name="basura" size={18} /> Borrar todos mis datos
         </button>
-      </section>
+      </section>}
 
       <p className="text-suave flex items-start gap-2 px-1 text-xs">
         <Icon name="escudo" size={16} className="text-dorado shrink-0" />

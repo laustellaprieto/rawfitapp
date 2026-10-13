@@ -8,7 +8,7 @@ import { Sheet } from '../../components/Sheet';
 import { Buscador } from './Buscador';
 
 type SerieTxt = { reps: string; peso: string; rir: string };
-type EjTxt = { ejercicioId: string; nombre: string; grupo: string; series: SerieTxt[] };
+type EjTxt = { ejercicioId: string; nombre: string; grupo: string; series: SerieTxt[]; objetivo?: string };
 
 const aTxt = (e: EjercicioSesion): EjTxt => ({
   ...e,
@@ -46,6 +46,7 @@ export function FormSesion({ sesion, historial, onCerrar }: { sesion: Sesion; hi
       fecha,
       nombre: nombre.trim() || 'Entreno',
       notas: notas.trim() || undefined,
+      rutinaUid: sesion.rutinaUid,
       ejercicios: ejercicios.map((e) => ({ ...e, series: e.series.map(aSerie).filter((x) => x.reps !== undefined || x.peso !== undefined) })),
     };
     if (sesion.id) await db.sesiones.put({ ...s, id: sesion.id });
@@ -95,6 +96,7 @@ export function FormSesion({ sesion, historial, onCerrar }: { sesion: Sesion; hi
                     <p className="text-suave text-xs">
                       {e.grupo} · Volumen <b className="text-champagne">{formatoVolumen(vol)}</b>
                     </p>
+                    {e.objetivo && <p className="text-dorado mt-0.5 text-xs font-semibold">Objetivo: {e.objetivo}</p>}
                   </div>
                   <div className="text-suave flex shrink-0">
                     <button type="button" onClick={() => mover(i, -1)} disabled={i === 0} className="p-1 disabled:opacity-20" aria-label="Subir ejercicio">

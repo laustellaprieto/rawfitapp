@@ -38,7 +38,25 @@ export function EditorHabitos({ habitos }: { habitos: Habito[] }) {
   return (
     <div>
       <div className="flex flex-col gap-2">
-        {habitos.map((h, i) => (
+        {habitos.map((h, i) =>
+          h.origen === 'coach' ? (
+            <div key={h.id} className="bg-dorado/[0.07] border-dorado/20 flex items-center gap-1.5 rounded-2xl border p-1.5">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-black/25 text-xl">{h.emoji}</span>
+              <span className="min-w-0 flex-1 px-1.5 text-sm">
+                {h.nombre}
+                <span className="text-dorado block text-[10px] font-semibold">Asignado por tu coach</span>
+              </span>
+              <div className="flex shrink-0 items-center">
+                <button type="button" onClick={() => mover(i, -1)} disabled={i === 0} className="text-suave p-1 disabled:opacity-20" aria-label="Subir">
+                  <Icon name="arriba" size={16} />
+                </button>
+                <button type="button" onClick={() => mover(i, 1)} disabled={i === habitos.length - 1} className="text-suave p-1 disabled:opacity-20" aria-label="Bajar">
+                  <Icon name="abajo" size={16} />
+                </button>
+                <Icon name="candado" size={16} className="text-dorado mx-2" aria-label="Solo tu coach puede cambiarlo" />
+              </div>
+            </div>
+          ) : (
           <div key={h.id} className={`bg-campo/60 flex items-center gap-1.5 rounded-2xl p-1.5 transition ${h.activo ? '' : 'opacity-45'}`}>
             <SelectorEmoji
               valor={h.emoji}
@@ -79,7 +97,8 @@ export function EditorHabitos({ habitos }: { habitos: Habito[] }) {
               </button>
             </div>
           </div>
-        ))}
+          ),
+        )}
       </div>
 
       <form onSubmit={agregar} className="mt-4">

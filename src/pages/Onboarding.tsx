@@ -9,6 +9,8 @@ import { Macros, ResultadoCaloriasTarjeta, resultadoDe, SelectorMeta, type Datos
 import { EditorHabitos } from '../components/EditorHabitos';
 import { Icon } from '../components/Icon';
 import { PiePagina } from '../components/ui';
+import { HojaAcceso } from '../components/Cuenta';
+import { nubeConfigurada } from '../config';
 
 const PASOS = 4;
 
@@ -29,6 +31,7 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
     grasaPct: perfil.grasaPct,
   });
   const { todos } = useHabitos();
+  const [acceso, setAcceso] = useState(false);
   const cambiar = (d: Partial<DatosCaloriasTxt>) => setCal((c) => ({ ...c, ...d }));
 
   const edad = parseNum(cal.edad);
@@ -93,6 +96,12 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
             <label className="etiqueta" htmlFor="o-fecha">Fecha de inicio del reto</label>
             <input id="o-fecha" type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className="campo" required />
             <p className="text-suave mt-2 text-xs">Ese día será tu “Día 1”. Normalmente es hoy.</p>
+            {nubeConfigurada && (
+              <button type="button" onClick={() => setAcceso(true)} className="bg-campo/60 mt-8 rounded-2xl px-4 py-3 text-left text-sm">
+                <span className="text-suave">¿Ya tienes cuenta?</span> <span className="text-dorado font-semibold">Inicia sesión</span>
+                <span className="text-suave block text-xs">Recuperas tu progreso y el plan de tu coach.</span>
+              </button>
+            )}
           </>
         )}
 
@@ -180,6 +189,7 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
         </div>
       </form>
       <PiePagina />
+      <HojaAcceso abierto={acceso} modoInicial="login" onCerrar={() => setAcceso(false)} />
     </div>
   );
 }

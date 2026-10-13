@@ -27,6 +27,7 @@ export function HabitoFila({ habito, hecho, fecha, racha }: { habito: Habito; he
         <span className={`block text-[15px] leading-snug font-medium transition-colors ${hecho ? 'text-champagne' : 'text-texto'}`}>
           {habito.nombre}
         </span>
+        {habito.origen === 'coach' && <span className="text-dorado/90 mt-0.5 block text-[10px] font-semibold tracking-wide uppercase">De tu coach</span>}
         {racha !== undefined && racha > 0 && (
           <span className="text-dorado mt-0.5 inline-flex items-center gap-1 text-xs font-medium">
             <Icon name="fuego" size={12} /> {racha} {racha === 1 ? 'día' : 'días'} seguidos

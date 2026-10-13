@@ -2,8 +2,8 @@
 
 App web instalable (PWA) de **Stella Prieto · Entrenadora deportiva · [@rawfit.stella](https://instagram.com/rawfit.stella)** para registrar hábitos, medidas, fotos de progreso y entrenamientos desde el celular.
 
-- **Sin cuenta ni servidor:** todo (fotos incluidas) se guarda en el dispositivo con IndexedDB (Dexie).
-- **Funciona sin internet** una vez abierta o instalada.
+- **Cuenta opcional:** sin cuenta, todo (fotos incluidas) se guarda solo en el dispositivo con IndexedDB (Dexie). Con cuenta (Supabase), el progreso se sincroniza en la nube y la coach puede asignar planes.
+- **Funciona sin internet** una vez abierta o instalada; los cambios se suben al volver la conexión.
 - **Copia de seguridad:** en Ajustes se exporta un archivo JSON con todos los datos y las fotos (en base64) y se importa en otro celular.
 
 ## Secciones
@@ -16,7 +16,8 @@ App web instalable (PWA) de **Stella Prieto · Entrenadora deportiva · [@rawfit
 | Progreso | Peso, cintura y abdomen; resumen, gráficas, análisis automático, cintura/estatura; check-ins de fotos (frente, perfil, espalda) con comparador antes/después |
 | Entreno | Sesiones con ejercicios del banco, series con reps, kg y RIR; volumen, historial, récords y volumen por grupo muscular |
 | Ejercicios | Banco de 112 ejercicios con filtros y buscador; ejercicios propios |
-| Ajustes | Datos, calorías, hábitos, copia de seguridad, borrar datos y aviso de salud |
+| Panel de coach | Solicitudes de clientes, lista de clientes y, por cliente: progreso (hábitos, racha, medidas, sesiones, check-ins y fotos si las comparte), rutinas con objetivos, PDF de nutrición y hábitos asignados |
+| Ajustes | Cuenta (crear, iniciar sesión, pedir ser cliente, compartir fotos, eliminar cuenta), datos, calorías, hábitos, copia de seguridad, borrar datos y aviso de salud |
 
 ## Archivos que puedes editar sin programar
 
@@ -24,6 +25,33 @@ App web instalable (PWA) de **Stella Prieto · Entrenadora deportiva · [@rawfit
 - `src/data/habitos.ts` — los 10 hábitos iniciales, los emojis disponibles, el pie de página y el aviso de salud.
 
 Puedes editarlos directo en GitHub (ícono del lápiz ✏️ → “Commit changes”). Vercel o Netlify publican el cambio solos en un par de minutos.
+
+---
+
+## Activar cuentas y el panel de coach (Supabase)
+
+Sin este paso la app funciona igual, pero solo en el dispositivo (sin cuentas).
+
+1. **Crea el proyecto:** en [supabase.com](https://supabase.com) → *New project* (nombre `rawfit`, guarda la contraseña de la base de datos en un lugar seguro).
+2. **Crea las tablas y reglas:** *SQL Editor* → *New query* → pega **todo** el archivo [`supabase/schema.sql`](supabase/schema.sql) → *Run*.
+3. **Conecta la app:** en *Project Settings → API* copia el **Project URL** y la clave **anon / publishable**. Ponlos en `src/config.ts` (o como variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en Vercel → *Settings → Environment Variables*). Son públicos por diseño; **nunca** uses la `service_role` / `secret key`.
+4. **Enlaces de correo:** *Authentication → URL Configuration* → *Site URL* = el link de tu app (ej. `https://rawfit-app.vercel.app`) y agrégalo también en *Redirect URLs*.
+5. **Correos de confirmación:** el servidor de correo incluido en Supabase envía muy pocos correos por hora (sirve para probar). Para tus clientes, configura un SMTP propio gratuito (por ejemplo, Resend) en *Authentication → Emails → SMTP Settings*, o desactiva *Confirm email* en *Authentication → Providers → Email* si prefieres que entren sin confirmar.
+6. **Hazte coach:** crea tu cuenta en la app (Ajustes → Tu cuenta). Luego, en el *SQL Editor*, ejecuta (con tu correo):
+   ```sql
+   update public.profiles set rol = 'coach' where email = 'tu-correo@ejemplo.com';
+   ```
+   Al volver a abrir la app verás el botón **Coach** arriba.
+
+### Cómo funciona con tus clientes
+
+1. Tu cliente crea su cuenta en la app (Ajustes → Tu cuenta) y toca **“Quiero ser cliente de Stella”**.
+2. Tú la aceptas en **Coach → Solicitudes**.
+3. En **Coach → Mis clientes → (cliente)** ves su progreso y le asignas **rutinas** (Entreno), su **PDF de nutrición** (Nutrición) y **hábitos** (Hábitos).
+4. Tu cliente lo ve en su app: “Hoy te toca…” y “Tu plan de nutrición” en Hoy, “Tu plan de entrenamiento” en Entreno, y los hábitos marcados “De tu coach”.
+5. Las fotos de progreso solo te llegan si tu cliente activa **“Compartir mis fotos con mi coach”**.
+
+El texto del aviso de privacidad está en `src/data/privacidad.ts`: revísalo y ajústalo a la ley de tu país.
 
 ---
 
@@ -77,6 +105,7 @@ npm run dev       # servidor de desarrollo
 npm run build     # verificación de tipos + build de producción en dist/
 npm run preview   # sirve el build (con service worker)
 npm run icons     # regenera los íconos de la PWA a partir de assets/logo.png
+npm run test:sync # pruebas de la sincronización (nube simulada en memoria)
 ```
 
 Stack: React + Vite + TypeScript + Tailwind CSS v4, Dexie, Recharts y vite-plugin-pwa. Fuentes (Bebas Neue e Inter) incluidas localmente para funcionar sin conexión.
@@ -86,7 +115,9 @@ Estructura:
 ```
 src/
 ├── data/        ejercicios.ts (banco) · habitos.ts (hábitos iniciales y textos)
-├── lib/         db (Dexie) · fechas · habitos (%, racha) · progreso · entreno · copia · celebraciones
+├── lib/         db (Dexie) · sync (sincronización) · nube (cuenta, Supabase) · coach · rutinas · calorias · fechas · habitos · progreso · entreno · copia
 ├── components/  Icon, Sheet, Anillo, Delta, Gráficas, Racha, Celebracion, EditorHabitos…
-└── pages/       Onboarding · Hoy · Habitos · progreso/ · entreno/ · Ejercicios · Ajustes
+└── pages/       Onboarding · Hoy · Habitos · progreso/ · entreno/ · Ejercicios · Ajustes · coach/
+supabase/schema.sql   tablas, reglas de seguridad (RLS) y funciones de la nube
+tests/                pruebas de sincronización y un servidor que imita Supabase sobre Postgres local
 ```

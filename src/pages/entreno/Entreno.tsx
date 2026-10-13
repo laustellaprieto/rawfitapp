@@ -9,6 +9,8 @@ import { Icon } from '../../components/Icon';
 import { Sheet } from '../../components/Sheet';
 import { BotonAgregar, Encabezado, Segmentos, Stat, Vacio } from '../../components/ui';
 import { FormSesion } from './FormSesion';
+import { TuPlanEntreno } from '../../components/PlanCoach';
+import { sesionDesdeRutina } from '../../lib/rutinas';
 
 type Vista = 'historial' | 'records' | 'grupos';
 
@@ -24,6 +26,12 @@ export default function Entreno({ accion }: { accion?: string }) {
   const nueva = () => setEditando({ fecha: hoy, nombre: '', ejercicios: [] });
   useEffect(() => {
     if (accion === 'nueva') nueva();
+    else if (accion?.startsWith('rutina:'))
+      db.rutinas
+        .where('uid')
+        .equals(accion.slice(7))
+        .first()
+        .then((r) => r && setEditando(sesionDesdeRutina(r)));
   }, [accion]);
 
   const delMes = lista.filter((s) => s.fecha.startsWith(mes));
@@ -35,6 +43,8 @@ export default function Entreno({ accion }: { accion?: string }) {
   return (
     <>
       <Encabezado subtitulo="Cada serie suma" titulo="Entreno" accion={<BotonAgregar onClick={nueva}>Nueva sesión</BotonAgregar>} />
+
+      <TuPlanEntreno onEmpezar={setEditando} />
 
       {sesiones !== undefined && lista.length === 0 ? (
         <Vacio
@@ -120,7 +130,7 @@ export default function Entreno({ accion }: { accion?: string }) {
       )}
 
       <Sheet abierto={!!editando} onCerrar={() => setEditando(null)} titulo={editando?.id ? 'Editar sesión' : 'Nueva sesión'}>
-        {editando && <FormSesion key={editando.id ?? 'nueva'} sesion={editando} historial={lista} onCerrar={() => setEditando(null)} />}
+        {editando && <FormSesion key={editando.id ?? editando.rutinaUid ?? 'nueva'} sesion={editando} historial={lista} onCerrar={() => setEditando(null)} />}
       </Sheet>
     </>
   );

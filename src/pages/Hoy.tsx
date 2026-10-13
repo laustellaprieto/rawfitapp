@@ -9,6 +9,7 @@ import { HabitoFila } from '../components/HabitoFila';
 import { Icon } from '../components/Icon';
 import { CaloriasHoy } from '../components/CaloriasHoy';
 import { SeccionRacha } from '../components/Racha';
+import { EntrenoDeHoy, TarjetaNutricion } from '../components/PlanCoach';
 import { Anillo } from '../components/ui';
 
 const FRASES = [
@@ -70,6 +71,8 @@ export default function Hoy({ perfil, ir }: { perfil: Perfil; ir: Ir }) {
         </button>
       )}
 
+      <EntrenoDeHoy onEmpezar={(r) => ir('entreno', `rutina:${r.uid}`)} />
+
       {/* Hábitos de hoy */}
       <section className="tarjeta animate-entrada mb-4">
         <div className="mb-4 flex items-center gap-4">
@@ -96,6 +99,8 @@ export default function Hoy({ perfil, ir }: { perfil: Perfil; ir: Ir }) {
       <SeccionRacha activos={activos} idx={idx} />
 
       <CaloriasHoy perfil={perfil} />
+
+      <TarjetaNutricion />
 
       {/* Accesos rápidos */}
       <div className="animate-entrada mb-4 grid grid-cols-2 gap-3">
