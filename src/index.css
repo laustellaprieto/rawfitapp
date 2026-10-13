@@ -104,3 +104,17 @@
 .pb-segura {
   padding-bottom: calc(env(safe-area-inset-bottom) + 6rem);
 }
+
+.confeti {
+  animation-name: caer;
+  animation-timing-function: cubic-bezier(0.3, 0.6, 0.6, 1);
+  animation-fill-mode: forwards;
+}
+@keyframes caer {
+  0% { translate: 0 0; rotate: 0deg; opacity: 1; }
+  100% { translate: 30px 105vh; rotate: 720deg; opacity: 0.6; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confeti { display: none; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

@@ -1,58 +1,58 @@
 import { useEffect, useRef, useState } from 'react';
-import { guardarAjustes } from '../lib/db';
-import { fechaRelativa, toISO } from '../lib/dates';
-import { borrarTodo, descargarCopia, importarCopia } from '../lib/backup';
+import { AVISO_SALUD } from '../data/habitos';
+import { guardarPerfil, type Perfil } from '../lib/db';
+import { borrarTodo, descargarCopia, importarCopia } from '../lib/copia';
+import { fechaRelativa, toISO } from '../lib/fechas';
 import { num, parseNum } from '../lib/format';
-import { useAjustes } from '../lib/hooks';
+import { useHabitos } from '../lib/hooks';
+import { EditorHabitos } from '../components/EditorHabitos';
 import { Icon } from '../components/Icon';
+import { Sheet } from '../components/Sheet';
 import { Encabezado } from '../components/ui';
 
 function useEspacio() {
-  const [uso, setUso] = useState<{ usado: number; total: number }>();
-  const [persistente, setPersistente] = useState<boolean>();
+  const [usado, setUsado] = useState<number>();
   useEffect(() => {
-    navigator.storage?.estimate?.().then((e) => setUso({ usado: e.usage ?? 0, total: e.quota ?? 0 }));
-    navigator.storage?.persisted?.().then(setPersistente);
+    navigator.storage?.estimate?.().then((e) => setUsado(e.usage ?? 0));
   }, []);
-  return { uso, persistente };
+  return usado;
 }
 
-const mb = (b: number) => (b / 1024 / 1024 < 1024 ? `${num(b / 1024 / 1024, 1)} MB` : `${num(b / 1024 ** 3, 1)} GB`);
+const mb = (b: number) => `${num(b / 1024 / 1024, 1)} MB`;
 
-export default function Ajustes() {
-  const a = useAjustes();
-  const { uso, persistente } = useEspacio();
+export default function Ajustes({ perfil }: { perfil: Perfil }) {
+  const usado = useEspacio();
+  const { todos } = useHabitos();
   const archivo = useRef<HTMLInputElement>(null);
+  const [habitosAbierto, setHabitosAbierto] = useState(false);
   const [estado, setEstado] = useState<{ tipo: 'ok' | 'error' | 'cargando'; texto: string }>();
 
   const exportar = async () => {
     setEstado({ tipo: 'cargando', texto: 'Preparando tu copia…' });
     try {
-      await descargarCopia();
-      await guardarAjustes({ ultimaCopia: new Date().toISOString() });
-      setEstado({ tipo: 'ok', texto: 'Copia lista. Guárdala en un lugar seguro (Drive, correo, computadora).' });
+      if (!(await descargarCopia())) return setEstado(undefined);
+      await guardarPerfil({ ultimaCopia: new Date().toISOString() });
+      setEstado({ tipo: 'ok', texto: 'Copia lista. Guárdala en un lugar seguro (Drive, correo o tu computadora).' });
     } catch {
       setEstado({ tipo: 'error', texto: 'No se pudo crear la copia. Inténtalo de nuevo.' });
     }
   };
 
   const importar = async (f: File | undefined) => {
+    const limpiar = () => archivo.current && (archivo.current.value = '');
     if (!f) return;
-    if (!confirm('Importar la copia reemplazará TODOS los datos actuales de este dispositivo. ¿Continuar?')) {
-      archivo.current!.value = '';
-      return;
-    }
+    if (!confirm('Importar la copia reemplazará TODOS los datos actuales de este dispositivo. ¿Continuar?')) return limpiar();
     setEstado({ tipo: 'cargando', texto: 'Importando…' });
     try {
       const r = await importarCopia(f);
       setEstado({
         tipo: 'ok',
-        texto: `Copia importada: ${r.habitos} hábitos, ${r.medidas} registros de medidas, ${r.entrenos} entrenos y ${r.fotos} fotos.`,
+        texto: `Copia importada: ${r.habitos ?? 0} hábitos, ${r.mediciones ?? 0} mediciones, ${r.checkins ?? 0} check-ins de fotos y ${r.sesiones ?? 0} sesiones de entreno.`,
       });
     } catch (e) {
       setEstado({ tipo: 'error', texto: (e as Error).message || 'No se pudo importar la copia.' });
     } finally {
-      archivo.current!.value = '';
+      limpiar();
     }
   };
 
@@ -60,7 +60,6 @@ export default function Ajustes() {
     if (!confirm('¿Borrar TODOS tus datos de este dispositivo? Esta acción no se puede deshacer.')) return;
     if (!confirm('Última confirmación: ¿seguro? Te recomendamos exportar una copia antes.')) return;
     await borrarTodo();
-    setEstado({ tipo: 'ok', texto: 'Se borraron todos los datos.' });
   };
 
   return (
@@ -68,32 +67,48 @@ export default function Ajustes() {
       <Encabezado subtitulo="Tu kit, a tu manera" titulo="Ajustes" />
 
       <section className="tarjeta animate-entrada mb-4 flex flex-col gap-4">
-        <h2 className="titulo text-2xl">Perfil</h2>
-        <div>
-          <label className="etiqueta" htmlFor="a-nombre">Nombre</label>
-          <input id="a-nombre" key={a.nombre} defaultValue={a.nombre} onBlur={(e) => guardarAjustes({ nombre: e.target.value.trim() })} className="campo" maxLength={30} placeholder="Tu nombre" />
-        </div>
-        <div>
-          <label className="etiqueta" htmlFor="a-obj">Objetivo</label>
-          <input id="a-obj" key={a.objetivo} defaultValue={a.objetivo} onBlur={(e) => guardarAjustes({ objetivo: e.target.value.trim() })} className="campo" maxLength={80} placeholder="Ej.: Ganar fuerza y bajar 5 kg" />
-        </div>
-        <div>
-          <label className="etiqueta" htmlFor="a-meta">Peso objetivo ({a.unidadPeso})</label>
-          <input
-            id="a-meta"
-            key={a.pesoObjetivo ?? 'x'}
-            inputMode="decimal"
-            defaultValue={a.pesoObjetivo?.toString() ?? ''}
-            onBlur={(e) => guardarAjustes({ pesoObjetivo: parseNum(e.target.value) })}
-            className="campo"
-            placeholder="Opcional"
+        <h2 className="titulo text-2xl">Mis datos</h2>
+        <Campo id="a-nombre" etiqueta="Nombre" valor={perfil.nombre} onGuardar={(v) => v && guardarPerfil({ nombre: v })} />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="etiqueta" htmlFor="a-inicio">Fecha de inicio</label>
+            <input id="a-inicio" type="date" value={perfil.fechaInicio} onChange={(e) => e.target.value && guardarPerfil({ fechaInicio: e.target.value })} className="campo" />
+          </div>
+          <Campo
+            id="a-est"
+            etiqueta="Estatura (cm)"
+            valor={perfil.estatura?.toString() ?? ''}
+            decimal
+            onGuardar={(v) => {
+              const n = parseNum(v);
+              if (n === undefined || (n >= 100 && n <= 250)) guardarPerfil({ estatura: n });
+            }}
           />
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Selector etiqueta="Peso" valor={a.unidadPeso} opciones={['kg', 'lb']} onChange={(v) => guardarAjustes({ unidadPeso: v as 'kg' | 'lb' })} />
-          <Selector etiqueta="Medidas" valor={a.unidadMedida} opciones={['cm', 'in']} onChange={(v) => guardarAjustes({ unidadMedida: v as 'cm' | 'in' })} />
+        <Campo id="a-obj" etiqueta="Objetivo" valor={perfil.objetivo} onGuardar={(v) => guardarPerfil({ objetivo: v })} />
+      </section>
+
+      <section className="tarjeta animate-entrada mb-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="titulo text-2xl">Mis hábitos</h2>
+            <p className="text-suave text-sm">
+              {todos.filter((h) => h.activo).length} activos{todos.some((h) => !h.activo) && ` · ${todos.filter((h) => !h.activo).length} en pausa`}
+            </p>
+          </div>
+          <button onClick={() => setHabitosAbierto(true)} className="btn-sec !py-2.5">
+            <Icon name="editar" size={16} /> Editar
+          </button>
         </div>
-        <p className="text-suave -mt-2 text-xs">Cambiar la unidad no convierte los valores ya registrados.</p>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {todos
+            .filter((h) => h.activo)
+            .map((h) => (
+              <span key={h.id} className="bg-campo rounded-full px-2.5 py-1 text-xs">
+                {h.emoji} {h.nombre}
+              </span>
+            ))}
+        </div>
       </section>
 
       <section className="tarjeta animate-entrada mb-4">
@@ -121,14 +136,9 @@ export default function Ajustes() {
           </p>
         )}
         <p className="text-suave mt-4 text-xs">
-          Última copia: <b className="text-texto">{a.ultimaCopia ? fechaRelativa(toISO(new Date(a.ultimaCopia))) : 'nunca'}</b>
+          Última copia: <b className="text-texto">{perfil.ultimaCopia ? fechaRelativa(toISO(new Date(perfil.ultimaCopia))) : 'nunca'}</b>
+          {usado !== undefined && <> · Espacio usado: {mb(usado)}</>}
         </p>
-        {uso && (
-          <p className="text-suave mt-1 text-xs">
-            Espacio usado: <b className="text-texto">{mb(uso.usado)}</b>
-            {persistente !== undefined && <> · Almacenamiento {persistente ? 'protegido ✓' : 'estándar'}</>}
-          </p>
-        )}
       </section>
 
       <section className="tarjeta animate-entrada mb-4">
@@ -137,37 +147,47 @@ export default function Ajustes() {
         </h2>
         <ul className="text-suave flex flex-col gap-2 text-sm">
           <li>
-            <b className="text-texto">iPhone (Safari):</b> toca Compartir <span aria-hidden>⬆️</span> y luego “Agregar a inicio”.
+            <b className="text-texto">iPhone (Safari):</b> toca Compartir y luego “Agregar a inicio”.
           </li>
           <li>
             <b className="text-texto">Android (Chrome):</b> abre el menú ⋮ y toca “Instalar app” o “Agregar a la pantalla principal”.
           </li>
-          <li>Una vez instalada funciona sin internet.</li>
+          <li>Una vez instalada, funciona sin internet.</li>
         </ul>
       </section>
 
-      <section className="tarjeta animate-entrada">
-        <h2 className="titulo text-sube mb-2 text-2xl">Zona de cuidado</h2>
-        <p className="text-suave mb-3 text-sm">Borra todos los hábitos, medidas, fotos y entrenos de este dispositivo.</p>
+      <section className="tarjeta animate-entrada mb-4">
+        <h2 className="titulo text-sube mb-2 text-2xl">Borrar datos</h2>
+        <p className="text-suave mb-3 text-sm">Borra hábitos, mediciones, fotos y entrenos de este dispositivo y vuelve a empezar.</p>
         <button onClick={borrar} className="btn-peligro w-full">
           <Icon name="basura" size={18} /> Borrar todos mis datos
         </button>
       </section>
+
+      <p className="text-suave flex items-start gap-2 px-1 text-xs">
+        <Icon name="escudo" size={16} className="text-dorado shrink-0" />
+        {AVISO_SALUD}
+      </p>
+
+      <Sheet abierto={habitosAbierto} onCerrar={() => setHabitosAbierto(false)} titulo="Mis hábitos">
+        <EditorHabitos habitos={todos} />
+      </Sheet>
     </>
   );
 }
 
-function Selector({ etiqueta, valor, opciones, onChange }: { etiqueta: string; valor: string; opciones: string[]; onChange: (v: string) => void }) {
+function Campo({ id, etiqueta, valor, onGuardar, decimal }: { id: string; etiqueta: string; valor: string; onGuardar: (v: string) => void; decimal?: boolean }) {
   return (
     <div>
-      <span className="etiqueta">{etiqueta}</span>
-      <div className="bg-campo flex rounded-xl p-1">
-        {opciones.map((o) => (
-          <button key={o} onClick={() => onChange(o)} className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${valor === o ? 'bg-dorado text-fondo' : 'text-suave'}`}>
-            {o}
-          </button>
-        ))}
-      </div>
+      <label className="etiqueta" htmlFor={id}>{etiqueta}</label>
+      <input
+        id={id}
+        key={valor}
+        defaultValue={valor}
+        inputMode={decimal ? 'decimal' : undefined}
+        onBlur={(e) => e.target.value.trim() !== valor && onGuardar(e.target.value.trim())}
+        className="campo"
+      />
     </div>
   );
 }

@@ -1,10 +1,11 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useMemo, useState } from 'react';
-import { AJUSTES_INICIALES, db } from './db';
-import { indexarRegistros } from './stats';
+import { db } from './db';
+import { indexarRegistros } from './habitos';
 
-export function useAjustes() {
-  return useLiveQuery(() => db.ajustes.get('main'), []) ?? AJUSTES_INICIALES;
+/** Perfil (undefined mientras carga). */
+export function usePerfil() {
+  return useLiveQuery(() => db.perfil.get('main'), []);
 }
 
 export function useHabitos() {
@@ -16,14 +17,6 @@ export function useHabitos() {
 export function useRegistros() {
   const registros = useLiveQuery(() => db.registros.toArray(), []);
   return useMemo(() => indexarRegistros(registros ?? []), [registros]);
-}
-
-export function useMedidas() {
-  return useLiveQuery(() => db.medidas.orderBy('fecha').toArray(), []);
-}
-
-export function useEntrenos() {
-  return useLiveQuery(() => db.entrenos.orderBy('fecha').reverse().toArray(), []);
 }
 
 /** Crea una URL temporal para mostrar un Blob como imagen. */

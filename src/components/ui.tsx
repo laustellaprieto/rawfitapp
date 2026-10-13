@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Icon } from './Icon';
 import { signo } from '../lib/format';
+import { INSTAGRAM } from '../data/habitos';
 
 export function Encabezado({ titulo, subtitulo, accion }: { titulo: string; subtitulo?: string; accion?: ReactNode }) {
   return (
@@ -115,17 +116,12 @@ export function PiePagina() {
   return (
     <footer className="text-suave mt-10 flex flex-col items-center gap-1.5 pb-2 text-center text-xs">
       <div className="bg-dorado/40 mb-2 h-px w-10" />
-      <a
-        href="https://instagram.com/rawfit.stella"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-champagne hover:text-dorado inline-flex items-center gap-1.5 font-semibold"
-      >
-        <Icon name="instagram" size={14} />
-        @rawfit.stella
-      </a>
-      <p>RawFit · Kit de Seguimiento</p>
-      <p className="opacity-70">Tus datos se guardan solo en este dispositivo.</p>
+      <p>
+        Stella Prieto · Entrenadora deportiva ·{' '}
+        <a href={INSTAGRAM} target="_blank" rel="noopener noreferrer" className="text-champagne hover:text-dorado font-semibold">
+          @rawfit.stella
+        </a>
+      </p>
     </footer>
   );
 }

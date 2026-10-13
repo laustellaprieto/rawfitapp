@@ -1,17 +1,15 @@
 import Dexie, { type EntityTable } from 'dexie';
+import { HABITOS_INICIALES } from '../data/habitos';
+import { hoyISO } from './fechas';
 
-export type UnidadPeso = 'kg' | 'lb';
-export type UnidadMedida = 'cm' | 'in';
-
-export interface Ajustes {
+export interface Perfil {
   id: 'main';
   nombre: string;
+  fechaInicio: string; // YYYY-MM-DD
+  estatura?: number; // cm
   objetivo: string;
-  pesoObjetivo?: number;
-  unidadPeso: UnidadPeso;
-  unidadMedida: UnidadMedida;
-  creadoEn: string;
-  ultimaCopia?: string;
+  onboardingCompleto: boolean;
+  ultimaCopia?: string; // ISO
 }
 
 export interface Habito {
@@ -24,88 +22,105 @@ export interface Habito {
 
 export interface RegistroHabito {
   habitoId: number;
-  fecha: string; // YYYY-MM-DD
+  fecha: string;
 }
 
-export interface Medida {
+export interface Medicion {
+  id?: number;
+  fecha: string;
+  peso?: number; // kg
+  cintura?: number; // cm
+  abdomen?: number; // cm
+}
+
+export type Pose = 'frente' | 'perfil' | 'espalda';
+
+export interface Checkin {
   id?: number;
   fecha: string;
   peso?: number;
-  grasa?: number;
-  cintura?: number;
-  cadera?: number;
-  pecho?: number;
-  brazo?: number;
-  muslo?: number;
-  notas?: string;
-}
-
-export type Pose = 'frente' | 'perfil' | 'espalda' | 'otra';
-
-export interface Foto {
-  id?: number;
-  fecha: string;
-  pose: Pose;
-  imagen: Blob;
   nota?: string;
 }
 
-export interface Ejercicio {
-  nombre: string;
-  series?: number;
-  reps?: number;
-  peso?: number;
+export interface Foto {
+  id?: number;
+  checkinId: number;
+  pose: Pose;
+  imagen: Blob;
 }
 
-export interface Entreno {
+export interface Serie {
+  reps?: number;
+  peso?: number; // kg
+  rir?: number;
+}
+
+export interface EjercicioSesion {
+  ejercicioId: string;
+  nombre: string;
+  grupo: string;
+  series: Serie[];
+}
+
+export interface Sesion {
   id?: number;
   fecha: string;
-  tipo: string;
-  duracion?: number; // minutos
-  esfuerzo?: number; // 1–10
-  ejercicios: Ejercicio[];
+  nombre: string;
+  ejercicios: EjercicioSesion[];
   notas?: string;
 }
 
-export const db = new Dexie('rawfit') as Dexie & {
-  ajustes: EntityTable<Ajustes, 'id'>;
+export interface EjercicioPropio {
+  id?: number;
+  nombre: string;
+  grupo: string;
+  equipo: string;
+  nivel: string;
+}
+
+/** Logro de racha ya celebrado. id = `${inicioRacha}:${hito}` para no repetirlo. */
+export interface Logro {
+  id: string;
+  hito: number;
+  inicioRacha: string;
+  fecha: string;
+}
+
+export const db = new Dexie('rawfit-kit') as Dexie & {
+  perfil: EntityTable<Perfil, 'id'>;
   habitos: EntityTable<Habito, 'id'>;
   registros: Dexie.Table<RegistroHabito, [number, string]>;
-  medidas: EntityTable<Medida, 'id'>;
+  mediciones: EntityTable<Medicion, 'id'>;
+  checkins: EntityTable<Checkin, 'id'>;
   fotos: EntityTable<Foto, 'id'>;
-  entrenos: EntityTable<Entreno, 'id'>;
+  sesiones: EntityTable<Sesion, 'id'>;
+  ejerciciosPropios: EntityTable<EjercicioPropio, 'id'>;
+  logros: EntityTable<Logro, 'id'>;
 };
 
 db.version(1).stores({
-  ajustes: 'id',
+  perfil: 'id',
   habitos: '++id, orden',
   registros: '[habitoId+fecha], habitoId, fecha',
-  medidas: '++id, fecha',
-  fotos: '++id, fecha, pose',
-  entrenos: '++id, fecha',
+  mediciones: '++id, fecha',
+  checkins: '++id, fecha',
+  fotos: '++id, checkinId',
+  sesiones: '++id, fecha',
+  ejerciciosPropios: '++id',
+  logros: 'id, fecha',
 });
 
-export const HABITOS_INICIALES: Omit<Habito, 'id'>[] = [
-  { nombre: 'Tomar 2 L de agua', emoji: '💧', orden: 0, activo: true },
-  { nombre: 'Caminar 8.000 pasos', emoji: '👟', orden: 1, activo: true },
-  { nombre: 'Entrenar', emoji: '🏋️', orden: 2, activo: true },
-  { nombre: 'Proteína en cada comida', emoji: '🥩', orden: 3, activo: true },
-  { nombre: 'Dormir 7–8 horas', emoji: '😴', orden: 4, activo: true },
-  { nombre: 'Frutas y verduras', emoji: '🥗', orden: 5, activo: true },
-];
-
-export const AJUSTES_INICIALES: Ajustes = {
+export const perfilInicial = (): Perfil => ({
   id: 'main',
   nombre: '',
+  fechaInicio: hoyISO(),
   objetivo: '',
-  unidadPeso: 'kg',
-  unidadMedida: 'cm',
-  creadoEn: new Date().toISOString(),
-};
+  onboardingCompleto: false,
+});
 
 db.on('populate', async (tx) => {
-  await tx.table('ajustes').add({ ...AJUSTES_INICIALES, creadoEn: new Date().toISOString() });
-  await tx.table('habitos').bulkAdd(HABITOS_INICIALES);
+  await tx.table('perfil').add(perfilInicial());
+  await tx.table('habitos').bulkAdd(HABITOS_INICIALES.map((h, orden) => ({ ...h, orden, activo: true })));
 });
 
 export async function toggleHabito(habitoId: number, fecha: string) {
@@ -115,7 +130,7 @@ export async function toggleHabito(habitoId: number, fecha: string) {
   return !existe;
 }
 
-export async function guardarAjustes(cambios: Partial<Omit<Ajustes, 'id'>>) {
-  const actual = (await db.ajustes.get('main')) ?? AJUSTES_INICIALES;
-  await db.ajustes.put({ ...actual, ...cambios, id: 'main' });
+export async function guardarPerfil(cambios: Partial<Omit<Perfil, 'id'>>) {
+  const actual = (await db.perfil.get('main')) ?? perfilInicial();
+  await db.perfil.put({ ...actual, ...cambios, id: 'main' });
 }

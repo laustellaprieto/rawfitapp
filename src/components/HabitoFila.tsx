@@ -24,7 +24,7 @@ export function HabitoFila({ habito, hecho, fecha, racha }: { habito: Habito; he
     >
       <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-black/25 text-xl">{habito.emoji || '•'}</span>
       <span className="min-w-0 flex-1">
-        <span className={`block truncate text-[15px] font-medium transition-colors ${hecho ? 'text-champagne' : 'text-texto'}`}>
+        <span className={`block text-[15px] leading-snug font-medium transition-colors ${hecho ? 'text-champagne' : 'text-texto'}`}>
           {habito.nombre}
         </span>
         {racha !== undefined && racha > 0 && (

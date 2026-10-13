@@ -55,3 +55,12 @@ export function fechaRelativa(iso: string): string {
   if (d > 1 && d < 7) return `Hace ${d} días`;
   return fechaCorta(iso) + (fromISO(iso).getFullYear() !== new Date().getFullYear() ? ` ${fromISO(iso).getFullYear()}` : '');
 }
+
+/** Día del reto: el día de inicio es el "Día 1". */
+export const diaDelReto = (fechaInicio: string) => diasEntre(fechaInicio, hoyISO()) + 1;
+
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+export const nombreMes = (mes: string) => {
+  const [y, m] = mes.split('-').map(Number);
+  return `${MESES[m - 1][0].toUpperCase()}${MESES[m - 1].slice(1)} ${y}`;
+};
