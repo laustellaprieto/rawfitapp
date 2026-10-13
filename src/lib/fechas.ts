@@ -64,3 +64,21 @@ export const nombreMes = (mes: string) => {
   const [y, m] = mes.split('-').map(Number);
   return `${MESES[m - 1][0].toUpperCase()}${MESES[m - 1].slice(1)} ${y}`;
 };
+
+export const mesDe = (iso: string) => iso.slice(0, 7);
+
+export function sumarMeses(mes: string, n: number): string {
+  const [y, m] = mes.split('-').map(Number);
+  const d = new Date(y, m - 1 + n, 1);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+}
+
+/** Todas las fechas YYYY-MM-DD de un mes YYYY-MM. */
+export function diasDelMes(mes: string): string[] {
+  const [y, m] = mes.split('-').map(Number);
+  const n = new Date(y, m, 0).getDate();
+  return Array.from({ length: n }, (_, i) => `${mes}-${pad(i + 1)}`);
+}
+
+/** Letra del día de la semana: L M M J V S D. */
+export const letraDia = (iso: string) => 'DLMMJVS'[fromISO(iso).getDay()];

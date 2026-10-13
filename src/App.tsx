@@ -5,6 +5,7 @@ import { PiePagina } from './components/ui';
 import { useCelebracion } from './lib/celebraciones';
 import { usePerfil } from './lib/hooks';
 import Ajustes from './pages/Ajustes';
+import Habitos from './pages/Habitos';
 import Hoy from './pages/Hoy';
 import Onboarding from './pages/Onboarding';
 import Proximamente from './pages/Proximamente';
@@ -73,7 +74,7 @@ export default function App() {
 
       <main key={pagina} data-accion={accion} className="pb-segura px-4 pt-2 sm:px-6">
         {pagina === 'hoy' && <Hoy perfil={perfil} ir={ir} />}
-        {pagina === 'habitos' && <Proximamente titulo="Hábitos" icono="habitos" />}
+        {pagina === 'habitos' && <Habitos ir={ir} />}
         {pagina === 'progreso' && <Proximamente titulo="Progreso" icono="medidas" />}
         {pagina === 'entreno' && <Proximamente titulo="Entreno" icono="entrenos" />}
         {pagina === 'ejercicios' && <Proximamente titulo="Ejercicios" icono="lista" />}
