@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { guardarPerfil, type Perfil } from '../lib/db';
 import { hoyISO } from '../lib/fechas';
-import { parseNum } from '../lib/format';
+import { numTxt, parseNum } from '../lib/format';
 import { useHabitos } from '../lib/hooks';
 import { EditorHabitos } from '../components/EditorHabitos';
 import { Icon } from '../components/Icon';
@@ -11,7 +11,7 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
   const [paso, setPaso] = useState(0);
   const [nombre, setNombre] = useState(perfil.nombre);
   const [fechaInicio, setFechaInicio] = useState(perfil.fechaInicio || hoyISO());
-  const [estatura, setEstatura] = useState(perfil.estatura?.toString() ?? '');
+  const [estatura, setEstatura] = useState(numTxt(perfil.estatura));
   const [objetivo, setObjetivo] = useState(perfil.objetivo);
   const { todos } = useHabitos();
 

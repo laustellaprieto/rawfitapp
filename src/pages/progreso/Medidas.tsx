@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
 import { db, type Medicion, type Perfil } from '../../lib/db';
 import { fechaCorta, fechaRelativa, hoyISO } from '../../lib/fechas';
-import { num, parseNum } from '../../lib/format';
+import { num, numTxt, parseNum } from '../../lib/format';
 import { analizar, CAMPOS_MEDICION, cinturaEstatura, resumenCampo, type CampoMedicion } from '../../lib/progreso';
 import { GraficaDosLineas, GraficaLinea } from '../../components/Graficas';
 import { Icon } from '../../components/Icon';
@@ -219,9 +219,9 @@ function Instrucciones() {
 function FormMedicion({ medicion, onCerrar }: { medicion: Medicion; onCerrar: () => void }) {
   const [fecha, setFecha] = useState(medicion.fecha);
   const [valores, setValores] = useState<Record<CampoMedicion, string>>({
-    peso: medicion.peso?.toString() ?? '',
-    cintura: medicion.cintura?.toString() ?? '',
-    abdomen: medicion.abdomen?.toString() ?? '',
+    peso: numTxt(medicion.peso),
+    cintura: numTxt(medicion.cintura),
+    abdomen: numTxt(medicion.abdomen),
   });
   const algun = CAMPOS_MEDICION.some((c) => parseNum(valores[c.campo]) !== undefined);
 

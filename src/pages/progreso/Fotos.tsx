@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useRef, useState } from 'react';
 import { db, type Checkin, type Foto, type Perfil, type Pose } from '../../lib/db';
 import { diasEntre, fechaCorta, fechaLarga, fechaRelativa, hoyISO, mesDe, nombreMes } from '../../lib/fechas';
-import { num, parseNum } from '../../lib/format';
+import { num, numTxt, parseNum } from '../../lib/format';
 import { useBlobURL } from '../../lib/hooks';
 import { comprimirImagen } from '../../lib/image';
 import { estadoCheckinFotos } from '../../lib/progreso';
@@ -175,7 +175,7 @@ function FormCheckin({ checkin, existentes, onCerrar }: { checkin: Checkin; exis
   const ultimaMedicion = useLiveQuery(() => db.mediciones.orderBy('fecha').filter((m) => m.peso !== undefined).last(), []);
   const actuales = existentes.find((c) => c.id === checkin.id)?.fotos ?? {};
   const [fecha, setFecha] = useState(checkin.fecha);
-  const [peso, setPeso] = useState(checkin.peso?.toString() ?? '');
+  const [peso, setPeso] = useState(numTxt(checkin.peso));
   const [nota, setNota] = useState(checkin.nota ?? '');
   const [nuevas, setNuevas] = useState<Partial<Record<Pose, Blob>>>({});
   const [quitadas, setQuitadas] = useState<Pose[]>([]);

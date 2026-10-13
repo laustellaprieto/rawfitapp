@@ -16,3 +16,6 @@ export function parseNum(v: string): number | undefined {
   const n = Number(t);
   return Number.isFinite(n) ? n : undefined;
 }
+
+/** Número → texto para un campo editable, con coma decimal (62,5). */
+export const numTxt = (n: number | undefined) => (n === undefined ? '' : String(n).replace('.', ','));

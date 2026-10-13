@@ -3,7 +3,7 @@ import { AVISO_SALUD } from '../data/habitos';
 import { guardarPerfil, type Perfil } from '../lib/db';
 import { borrarTodo, descargarCopia, importarCopia } from '../lib/copia';
 import { fechaRelativa, toISO } from '../lib/fechas';
-import { num, parseNum } from '../lib/format';
+import { num, numTxt, parseNum } from '../lib/format';
 import { useHabitos } from '../lib/hooks';
 import { EditorHabitos } from '../components/EditorHabitos';
 import { Icon } from '../components/Icon';
@@ -77,7 +77,7 @@ export default function Ajustes({ perfil }: { perfil: Perfil }) {
           <Campo
             id="a-est"
             etiqueta="Estatura (cm)"
-            valor={perfil.estatura?.toString() ?? ''}
+            valor={numTxt(perfil.estatura)}
             decimal
             onGuardar={(v) => {
               const n = parseNum(v);

@@ -10,6 +10,7 @@ import Hoy from './pages/Hoy';
 import Onboarding from './pages/Onboarding';
 import Proximamente from './pages/Proximamente';
 import Progreso from './pages/progreso/Progreso';
+import Entreno from './pages/entreno/Entreno';
 
 export type Pagina = 'hoy' | 'habitos' | 'progreso' | 'entreno' | 'ejercicios' | 'ajustes';
 /** Navega a una pestaña; `accion` abre algo dentro (ej. el formulario de medición). */
@@ -77,7 +78,7 @@ export default function App() {
         {pagina === 'hoy' && <Hoy perfil={perfil} ir={ir} />}
         {pagina === 'habitos' && <Habitos ir={ir} />}
         {pagina === 'progreso' && <Progreso perfil={perfil} accion={accion} />}
-        {pagina === 'entreno' && <Proximamente titulo="Entreno" icono="entrenos" />}
+        {pagina === 'entreno' && <Entreno accion={accion} />}
         {pagina === 'ejercicios' && <Proximamente titulo="Ejercicios" icono="lista" />}
         {pagina === 'ajustes' && <Ajustes perfil={perfil} />}
         <PiePagina />
