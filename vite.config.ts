@@ -15,7 +15,7 @@ export default defineConfig({
         name: 'RawFit · Kit de Seguimiento',
         short_name: 'RawFit',
         description:
-          'Registra tus hábitos, medidas, fotos de progreso y entrenamientos. Todo se guarda en tu dispositivo.',
+          'Registra tus hábitos, medidas, fotos de progreso y entrenamientos. Todo se guarda en tu dispositivo. Por Stella Prieto (@rawfit.stella).',
         lang: 'es',
         start_url: '/',
         scope: '/',
@@ -24,6 +24,11 @@ export default defineConfig({
         background_color: '#111111',
         theme_color: '#111111',
         categories: ['health', 'fitness', 'lifestyle'],
+        shortcuts: [
+          { name: 'Hábitos de hoy', short_name: 'Hoy', url: '/' },
+          { name: 'Registrar entreno', short_name: 'Entreno', url: '/#entreno' },
+          { name: 'Registrar medidas', short_name: 'Medidas', url: '/#progreso' },
+        ],
         icons: [
           { src: 'pwa-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512.png', sizes: '512x512', type: 'image/png' },
