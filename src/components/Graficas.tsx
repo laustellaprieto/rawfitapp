@@ -1,4 +1,4 @@
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { num } from '../lib/format';
 
 const EJE = { fill: '#8C8C8C', fontSize: 11 };
@@ -75,6 +75,84 @@ export function GraficaBarras({ datos, unidad, alto = 180, dec = 0 }: { datos: {
           <Bar dataKey="y" fill="#C9A96E" radius={[4, 4, 0, 0]} maxBarSize={28} animationDuration={700} />
         </BarChart>
       </ResponsiveContainer>
+    </div>
+  );
+}
+
+/** Dos líneas en la misma escala (ej. cintura y abdomen, ambas en cm), con leyenda. */
+export function GraficaDosLineas({
+  datos,
+  series,
+  unidad,
+  alto = 210,
+}: {
+  datos: Record<string, string | number | undefined>[];
+  series: { clave: string; nombre: string; color: string; punteada?: boolean }[];
+  unidad: string;
+  alto?: number;
+}) {
+  const ys = datos.flatMap((d) => series.map((s) => d[s.clave])).filter((v): v is number => typeof v === 'number');
+  const min = Math.min(...ys);
+  const max = Math.max(...ys);
+  const margen = Math.max((max - min) * 0.15, 0.5);
+  return (
+    <div>
+      <div className="mb-2 flex gap-4 text-xs">
+        {series.map((s) => (
+          <span key={s.clave} className="text-suave inline-flex items-center gap-1.5">
+            <svg width="18" height="6" aria-hidden>
+              <line x1="0" y1="3" x2="18" y2="3" stroke={s.color} strokeWidth="2.5" strokeDasharray={s.punteada ? '4 3' : undefined} />
+            </svg>
+            {s.nombre}
+          </span>
+        ))}
+      </div>
+      <div style={{ height: alto }} className="-ml-2">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={datos} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <CartesianGrid stroke="#2B2B2B" strokeDasharray="3 4" vertical={false} />
+            <XAxis dataKey="x" tick={EJE} tickLine={false} axisLine={false} minTickGap={24} />
+            <YAxis
+              tick={EJE}
+              tickLine={false}
+              axisLine={false}
+              width={40}
+              domain={[Math.floor(min - margen), Math.ceil(max + margen)]}
+              tickFormatter={(v: number) => num(v, 0)}
+            />
+            <Tooltip
+              cursor={{ stroke: '#C9A96E', strokeOpacity: 0.4 }}
+              content={({ active, payload, label }) =>
+                active && payload?.length ? (
+                  <div className="bg-campo rounded-xl border border-white/10 px-3 py-2 shadow-xl">
+                    <p className="text-suave text-[11px]">{label}</p>
+                    {payload.map((p) => (
+                      <p key={String(p.dataKey)} className="text-texto text-sm font-semibold tabular-nums">
+                        <span className="text-suave font-normal">{p.name}:</span> {num(p.value as number)} {unidad}
+                      </p>
+                    ))}
+                  </div>
+                ) : null
+              }
+            />
+            {series.map((s) => (
+              <Line
+                key={s.clave}
+                type="monotone"
+                dataKey={s.clave}
+                name={s.nombre}
+                stroke={s.color}
+                strokeWidth={2}
+                strokeDasharray={s.punteada ? '6 4' : undefined}
+                dot={{ r: 3, fill: s.color, stroke: '#1C1C1C', strokeWidth: 2 }}
+                activeDot={{ r: 5, stroke: '#1C1C1C', strokeWidth: 2 }}
+                connectNulls
+                animationDuration={700}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import Habitos from './pages/Habitos';
 import Hoy from './pages/Hoy';
 import Onboarding from './pages/Onboarding';
 import Proximamente from './pages/Proximamente';
+import Progreso from './pages/progreso/Progreso';
 
 export type Pagina = 'hoy' | 'habitos' | 'progreso' | 'entreno' | 'ejercicios' | 'ajustes';
 /** Navega a una pestaña; `accion` abre algo dentro (ej. el formulario de medición). */
@@ -75,7 +76,7 @@ export default function App() {
       <main key={pagina} data-accion={accion} className="pb-segura px-4 pt-2 sm:px-6">
         {pagina === 'hoy' && <Hoy perfil={perfil} ir={ir} />}
         {pagina === 'habitos' && <Habitos ir={ir} />}
-        {pagina === 'progreso' && <Proximamente titulo="Progreso" icono="medidas" />}
+        {pagina === 'progreso' && <Progreso perfil={perfil} accion={accion} />}
         {pagina === 'entreno' && <Proximamente titulo="Entreno" icono="entrenos" />}
         {pagina === 'ejercicios' && <Proximamente titulo="Ejercicios" icono="lista" />}
         {pagina === 'ajustes' && <Ajustes perfil={perfil} />}
