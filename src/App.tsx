@@ -18,6 +18,21 @@ import Ejercicios from './pages/Ejercicios';
 import Progreso from './pages/progreso/Progreso';
 import Entreno from './pages/entreno/Entreno';
 
+/**
+ * Guarda la altura real del menú inferior en --alto-nav para que el final de cada pantalla
+ * no quede tapado (en iPhone crece con la barra de inicio y con el texto grande).
+ */
+const medirNav = (() => {
+  let obs: ResizeObserver | undefined;
+  return (nav: HTMLElement | null) => {
+    obs?.disconnect();
+    obs = undefined;
+    if (!nav || typeof ResizeObserver === 'undefined') return;
+    obs = new ResizeObserver(() => document.documentElement.style.setProperty('--alto-nav', `${Math.ceil(nav.getBoundingClientRect().height)}px`));
+    obs.observe(nav);
+  };
+})();
+
 export type Pagina = 'hoy' | 'habitos' | 'progreso' | 'entreno' | 'ejercicios' | 'ajustes' | 'coach';
 /** Navega a una pestaña; `accion` abre algo dentro (ej. el formulario de medición). */
 export type Ir = (p: Pagina, accion?: string) => void;
@@ -112,7 +127,7 @@ export default function App() {
         <PiePagina />
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:pb-4">
+      <nav ref={medirNav} className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:pb-4">
         <div className="bg-tarjeta/90 mx-auto grid max-w-md grid-cols-5 rounded-3xl border border-white/[0.06] p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl">
           {NAV.map((n) => {
             const activo = pagina === n.id;

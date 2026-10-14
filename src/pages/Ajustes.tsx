@@ -138,7 +138,9 @@ export default function Ajustes({ perfil, ir }: { perfil: Perfil; ir: Ir }) {
       <section className="tarjeta animate-entrada mb-4">
         <h2 className="titulo text-2xl">Copia de seguridad</h2>
         <p className="text-suave mt-1 mb-4 text-sm">
-          Tus datos viven solo en este dispositivo. Exporta una copia (incluye tus fotos) para no perder nada si cambias de celular o borras el navegador.
+          {conSesion
+            ? 'Tu cuenta ya guarda tus hábitos, medidas y entrenos en la nube. Esta copia es un respaldo extra que además incluye tus fotos.'
+            : 'Sin cuenta, tus datos viven solo en este celular. Exporta una copia (incluye tus fotos) para no perder nada si cambias de celular o borras la app.'}
         </p>
         <div className="flex flex-col gap-2">
           <button onClick={exportar} disabled={estado?.tipo === 'cargando'} className="btn-oro w-full">

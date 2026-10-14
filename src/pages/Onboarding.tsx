@@ -93,16 +93,40 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
           <>
             <p className="text-suave text-xs font-medium tracking-[0.2em] uppercase">RawFit App</p>
             <h1 className="titulo mt-1 text-5xl leading-none">Te damos la bienvenida</h1>
-            <p className="text-suave mt-3 mb-8">Aquí vas a registrar tus hábitos, medidas, fotos y entrenos. Todo se guarda solo en tu celular.</p>
+            <p className="text-suave mt-3 mb-6">Aquí registras tus hábitos, medidas, fotos y entrenos, y ves el plan que te prepara tu coach.</p>
+            {nubeConfigurada && (
+              <>
+                <div className="border-dorado/30 bg-dorado/[0.07] rounded-2xl border p-4">
+                  <p className="font-semibold">¿Tienes coach o ya tienes cuenta?</p>
+                  <p className="text-suave mt-0.5 text-sm">Inicia sesión para recuperar tu progreso y recibir tu plan de entrenamiento.</p>
+                  <button type="button" onClick={() => setAcceso(true)} className="btn-oro mt-3 w-full !py-3.5">
+                    Inicia sesión
+                  </button>
+                  <p className="text-suave mt-2 text-center text-xs">¿Primera vez? Ahí mismo puedes crear tu cuenta.</p>
+                </div>
+                <p className="text-suave my-6 flex items-center gap-3 text-xs tracking-wider uppercase before:h-px before:flex-1 before:bg-white/10 after:h-px after:flex-1 after:bg-white/10">
+                  o empieza sin cuenta
+                </p>
+              </>
+            )}
             <label className="etiqueta" htmlFor="o-nombre">¿Cómo te llamas?</label>
-            <input id="o-nombre" autoFocus value={nombre} onChange={(e) => setNombre(e.target.value)} className="campo mb-5" placeholder="Tu nombre" maxLength={30} autoComplete="given-name" />
+            <input id="o-nombre" autoFocus={!nubeConfigurada} value={nombre} onChange={(e) => setNombre(e.target.value)} className="campo mb-5" placeholder="Tu nombre" maxLength={30} autoComplete="given-name" />
             <label className="etiqueta" htmlFor="o-fecha">Fecha de inicio del reto</label>
             <input id="o-fecha" type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className="campo" required />
             <p className="text-suave mt-2 text-xs">Ese día será tu “Día 1”. Normalmente es hoy.</p>
-            <button type="button" onClick={() => archivo.current?.click()} className="bg-campo/60 mt-8 rounded-2xl px-4 py-3 text-left text-sm">
-              <span className="text-suave">¿Tienes una copia de seguridad?</span> <span className="text-dorado font-semibold">Importar copia</span>
-              <span className="text-suave block text-xs">Recupera tus datos exportados desde otro celular o desde la app anterior.</span>
-            </button>
+            <div className="bg-campo/50 mt-6 rounded-2xl px-4 py-3 text-xs leading-relaxed">
+              <p className="text-texto mb-1 flex items-center gap-1.5 text-sm font-semibold">
+                <Icon name="escudo" size={16} className="text-dorado" /> ¿Dónde se guardan tus datos?
+              </p>
+              <p className="text-suave">
+                <b className="text-texto">Sin cuenta:</b> todo queda solo en este celular. Si lo cambias o borras la app, se pierde (salvo que exportes una copia en Ajustes).
+              </p>
+              {nubeConfigurada && (
+                <p className="text-suave mt-1">
+                  <b className="text-texto">Con cuenta:</b> tus hábitos, medidas y entrenos también se guardan en la nube, así los recuperas en otro celular y tu coach puede ver tu progreso. Tus fotos se quedan en tu celular, salvo que decidas compartirlas con tu coach.
+                </p>
+              )}
+            </div>
             <input
               ref={archivo}
               type="file"
@@ -122,12 +146,6 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
               }}
             />
             {errorImportar && <p className="text-sube mt-2 text-xs">{errorImportar}</p>}
-            {nubeConfigurada && (
-              <button type="button" onClick={() => setAcceso(true)} className="bg-campo/60 mt-3 rounded-2xl px-4 py-3 text-left text-sm">
-                <span className="text-suave">¿Ya tienes cuenta?</span> <span className="text-dorado font-semibold">Inicia sesión</span>
-                <span className="text-suave block text-xs">Recuperas tu progreso y el plan de tu coach.</span>
-              </button>
-            )}
           </>
         )}
 
@@ -209,10 +227,18 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
               <Icon name="izq" size={20} />
             </button>
           )}
-          <button className="btn-oro flex-1 !py-3.5" disabled={!puedeSeguir}>
-            {paso < PASOS - 1 ? 'Continuar' : '¡Empezar mi reto!'}
+          <button className={`${paso === 0 && nubeConfigurada ? 'btn-sec' : 'btn-oro'} flex-1 !py-3.5`} disabled={!puedeSeguir}>
+            {paso === 0 && nubeConfigurada ? 'Continuar sin cuenta' : paso < PASOS - 1 ? 'Continuar' : '¡Empezar mi reto!'}
           </button>
         </div>
+        {paso === 0 && (
+          <p className="text-suave mt-4 text-center text-xs">
+            ¿Tienes una copia de seguridad?{' '}
+            <button type="button" onClick={() => archivo.current?.click()} className="text-dorado font-semibold underline-offset-2 hover:underline">
+              Importar copia
+            </button>
+          </p>
+        )}
       </form>
       <PiePagina />
       <HojaAcceso abierto={acceso} modoInicial="login" onCerrar={() => setAcceso(false)} />
