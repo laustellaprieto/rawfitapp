@@ -69,7 +69,12 @@ export default function App() {
     return () => window.removeEventListener('hashchange', f);
   }, []);
 
-  useEffect(() => window.scrollTo({ top: 0 }), [pagina]);
+  // Con llaves: un efecto solo puede devolver una función de limpieza. Si devolviera lo que
+  // devuelve scrollTo (en algunos navegadores no es undefined), React lo llamaría al cambiar
+  // de pestaña o al actualizar la app → "n is not a function".
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [pagina]);
 
   const ir: Ir = (p, a) => {
     setAccion(a);
