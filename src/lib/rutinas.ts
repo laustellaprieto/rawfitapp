@@ -2,6 +2,7 @@ import { db, type EjercicioRutina, type Nutricion, type Rutina, type Sesion } fr
 import { diasEntre, fechaCorta, hoyISO, sumarDias } from './fechas';
 import { num } from './format';
 import { supabase } from './nube';
+import { aBlob } from './image';
 
 export const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 export const diaDeHoy = () => DIAS_SEMANA[(new Date().getDay() + 6) % 7];
@@ -56,7 +57,7 @@ export async function abrirPdf(n: Nutricion) {
     const { data } = await supabase.storage.from('nutricion').createSignedUrl(n.path, 3600);
     url = data?.signedUrl;
   }
-  if (!url && n.archivo) url = URL.createObjectURL(n.archivo);
+  if (!url && n.archivo) url = URL.createObjectURL(aBlob(n.archivo)!);
   if (!url) {
     ventana?.close();
     alert('No se pudo abrir la guía. Conéctate a internet e inténtalo de nuevo.');

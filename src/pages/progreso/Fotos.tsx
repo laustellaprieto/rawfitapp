@@ -1,10 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useRef, useState } from 'react';
-import { db, type Checkin, type Foto, type Perfil, type Pose } from '../../lib/db';
+import { db, type ArchivoGuardado, type Checkin, type Foto, type Perfil, type Pose } from '../../lib/db';
 import { diasEntre, fechaCorta, fechaLarga, fechaRelativa, hoyISO, mesDe, nombreMes } from '../../lib/fechas';
 import { num, numTxt, parseNum } from '../../lib/format';
 import { useBlobURL } from '../../lib/hooks';
-import { comprimirImagen } from '../../lib/image';
+import { aBlob, comprimirImagen, paraGuardar } from '../../lib/image';
 import { estadoCheckinFotos } from '../../lib/progreso';
 import { Icon } from '../../components/Icon';
 import { Sheet } from '../../components/Sheet';
@@ -193,6 +193,9 @@ function FormCheckin({ checkin, existentes, onCerrar }: { checkin: Checkin; exis
     e.preventDefault();
     setGuardando(true);
     try {
+      // Las fotos se pasan a bytes antes de la transacción (dentro no se puede esperar otra cosa que la base).
+      const bytes: Partial<Record<Pose, ArchivoGuardado>> = {};
+      for (const p of POSES.map((x) => x.valor)) if (nuevas[p]) bytes[p] = await paraGuardar(nuevas[p]!);
       await db.transaction('rw', db.checkins, db.fotos, async () => {
         const datos: Checkin = { fecha, peso: parseNum(peso), nota: nota.trim() || undefined };
         const id = checkin.id ?? ((await db.checkins.add(datos)) as number);
@@ -200,7 +203,7 @@ function FormCheckin({ checkin, existentes, onCerrar }: { checkin: Checkin; exis
         for (const p of POSES.map((x) => x.valor)) {
           const previa = actuales[p];
           if ((nuevas[p] || quitadas.includes(p)) && previa) await db.fotos.delete(previa.id!);
-          if (nuevas[p]) await db.fotos.add({ checkinId: id, pose: p, imagen: nuevas[p]! });
+          if (nuevas[p]) await db.fotos.add({ checkinId: id, pose: p, imagen: bytes[p]! });
         }
       });
       onCerrar();
@@ -229,7 +232,7 @@ function FormCheckin({ checkin, existentes, onCerrar }: { checkin: Checkin; exis
             key={p.valor}
             pose={p.texto}
             archivo={nuevas[p.valor]}
-            actual={quitadas.includes(p.valor) ? undefined : actuales[p.valor]?.imagen}
+            actual={quitadas.includes(p.valor) ? undefined : aBlob(actuales[p.valor]?.imagen)}
             onElegir={(f) => elegir(p.valor, f)}
             onQuitar={() => {
               setNuevas((n) => ({ ...n, [p.valor]: undefined }));

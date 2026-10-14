@@ -3,7 +3,7 @@ import { useMemo, useRef, useState } from 'react';
 import { db, TIPOS_COMIDA, type Comida as EntradaComida, type TipoComida } from '../lib/db';
 import { fechaLarga, fechaRelativa, hoyISO, sumarDias } from '../lib/fechas';
 import { useBlobURL } from '../lib/hooks';
-import { comprimirImagen } from '../lib/image';
+import { aBlob, comprimirImagen, paraGuardar } from '../lib/image';
 import { useCuenta } from '../lib/nube';
 import { Icon } from '../components/Icon';
 import { TarjetaNutricion } from '../components/PlanCoach';
@@ -125,7 +125,9 @@ function FormComida({ entrada, onCerrar }: { entrada: EntradaComida; onCerrar: (
   const [hora, setHora] = useState(entrada.hora);
   const [tipo, setTipo] = useState<TipoComida>(entrada.tipo);
   const [nota, setNota] = useState(entrada.nota ?? '');
-  const [imagen, setImagen] = useState<Blob | undefined>(entrada.imagen);
+  // La foto se edita como Blob en memoria; se guarda como bytes (ver ArchivoGuardado).
+  const [inicial] = useState(() => aBlob(entrada.imagen));
+  const [imagen, setImagen] = useState<Blob | undefined>(inicial);
   const [procesando, setProcesando] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const camara = useRef<HTMLInputElement>(null);
@@ -146,14 +148,14 @@ function FormComida({ entrada, onCerrar }: { entrada: EntradaComida; onCerrar: (
     ev.preventDefault();
     setGuardando(true);
     try {
-      const cambioFoto = imagen !== entrada.imagen;
+      const cambioFoto = imagen !== inicial;
       const datos: EntradaComida = {
         ...entrada,
         fecha,
         hora,
         tipo,
         nota: nota.trim() || undefined,
-        imagen,
+        imagen: !imagen ? undefined : cambioFoto ? await paraGuardar(imagen) : entrada.imagen,
         fotoV: imagen ? (cambioFoto ? Date.now() : entrada.fotoV) : undefined,
       };
       if (entrada.id) await db.comidas.put(datos);
@@ -224,7 +226,7 @@ function FormComida({ entrada, onCerrar }: { entrada: EntradaComida; onCerrar: (
           maxLength={1000}
         />
       </div>
-      {fecha !== hoyISO() && <p className="text-suave -mt-2 text-xs">Se guardará en el {fechaLarga(fecha)}.</p>}
+      {fecha !== hoyISO() && <p className="text-suave -mt-2 text-xs">Queda anotada para el {fechaLarga(fecha)}.</p>}
 
       <div className="flex gap-2">
         {entrada.id && (

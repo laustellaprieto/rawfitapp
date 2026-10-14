@@ -1,5 +1,5 @@
 import { db } from './db';
-import { blobADataURL, dataURLABlob } from './image';
+import { aBlob, blobADataURL, dataURLABlob, paraGuardar } from './image';
 import { hoyISO } from './fechas';
 
 const FORMATO = 'rawfit-kit-seguimiento';
@@ -14,7 +14,9 @@ export interface CopiaSeguridad {
   tablas: Record<string, Fila[]>;
 }
 
-/** Exporta todas las tablas; los Blob (fotos) se guardan como data URL en base64. */
+const esBytes = (v: unknown): v is { buf: ArrayBuffer; tipo: string } => !!v && typeof v === 'object' && (v as { buf?: unknown }).buf instanceof ArrayBuffer;
+
+/** Exporta todas las tablas; los archivos (fotos, PDF) se guardan como data URL en base64. */
 export async function crearCopia(): Promise<CopiaSeguridad> {
   const tablas: Record<string, Fila[]> = {};
   for (const t of db.tables) {
@@ -22,7 +24,7 @@ export async function crearCopia(): Promise<CopiaSeguridad> {
     tablas[t.name] = await Promise.all(
       filas.map(async (f) => {
         const out: Fila = {};
-        for (const [k, v] of Object.entries(f)) out[k] = v instanceof Blob ? { __blob: await blobADataURL(v) } : v;
+        for (const [k, v] of Object.entries(f)) out[k] = v instanceof Blob || esBytes(v) ? { __blob: await blobADataURL(aBlob(v)!) } : v;
         return out;
       }),
     );
@@ -78,7 +80,7 @@ export async function importarCopia(file: File): Promise<Record<string, number>>
       (datos.tablas[t.name] ?? []).map(async (f) => {
         const out: Fila = {};
         for (const [k, v] of Object.entries(f))
-          out[k] = v && typeof v === 'object' && '__blob' in (v as Fila) ? await dataURLABlob((v as { __blob: string }).__blob) : v;
+          out[k] = v && typeof v === 'object' && '__blob' in (v as Fila) ? await paraGuardar(await dataURLABlob((v as { __blob: string }).__blob)) : v;
         return out;
       }),
     );

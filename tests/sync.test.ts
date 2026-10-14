@@ -6,7 +6,8 @@ import 'fake-indexeddb/auto';
 import assert from 'node:assert/strict';
 import { db, guardarPerfil, toggleHabito } from '../src/lib/db';
 import { hoyISO } from '../src/lib/fechas';
-import { marcarFotosParaSubir, retirarFotosDeLaNube, sincronizar, vincularBajando, vincularSubiendo, type FilaRemota, type Remoto } from '../src/lib/sync';
+import { aBlob, paraGuardar } from '../src/lib/image';
+import { convertirArchivosSinCache, marcarFotosParaSubir, retirarFotosDeLaNube, sincronizar, vincularBajando, vincularSubiendo, type FilaRemota, type Remoto } from '../src/lib/sync';
 
 // ── Nube falsa ──
 let reloj = 0;
@@ -77,6 +78,7 @@ async function main() {
   assert.equal(enNube(ANA, 'checkins').length, 1);
   assert.equal(enNube(ANA, 'sesiones').length, 1);
   assert.equal(enNube(ANA, 'fotos').length, 0, 'sin compartir, las fotos no suben');
+  assert.ok(!((await db.fotos.toArray())[0].imagen instanceof Blob), 'las fotos guardadas como Blob (versión anterior) pasan a bytes');
   assert.equal(await db.habitos.filter((h) => h._p === 1).count(), 0, 'ya no quedan pendientes');
   assert.equal(await db.fotos.filter((f) => f._p === 1).count(), 1, 'la foto sigue pendiente');
   console.log('✓ primer inicio de sesión sube los datos locales');
@@ -104,7 +106,7 @@ async function main() {
   assert.equal((await db.habitos.where('uid').equals('hc').first())?.origen, 'coach');
   const pdf = await db.nutricion.toArray();
   assert.equal(pdf.length, 1);
-  assert.equal(await pdf[0].archivo!.text(), '%PDF-1.4', 'el PDF queda guardado para verlo sin internet');
+  assert.equal(await aBlob(pdf[0].archivo)!.text(), '%PDF-1.4', 'el PDF queda guardado para verlo sin internet');
   // El cliente marca el hábito de la coach
   const hc = (await db.habitos.where('uid').equals('hc').first())!;
   await toggleHabito(hc.id!, hoyISO());
@@ -152,7 +154,7 @@ async function main() {
   const reg = await db.registros.toArray();
   for (const x of reg) assert.ok(await db.habitos.get(x.habitoId), 'cada registro apunta a un hábito local');
   const foto = (await db.fotos.toArray())[0];
-  assert.equal(await foto.imagen.text(), 'foto-frente');
+  assert.equal(await aBlob(foto.imagen)!.text(), 'foto-frente');
   assert.equal(foto.checkinId, (await db.checkins.toArray())[0].id);
   assert.equal(await db.habitos.filter((h) => h._p === 1).count(), 0, 'lo bajado no queda pendiente');
   console.log('✓ un celular nuevo recupera todo');
@@ -171,7 +173,7 @@ async function main() {
   console.log('✓ al dejar de compartir, las fotos salen de la nube');
 
   // ── Diario de comidas ──
-  const foto1 = new Blob(['plato-1'], { type: 'image/jpeg' });
+  const foto1 = await paraGuardar(new Blob(['plato-1'], { type: 'image/jpeg' }));
   const idComida = await db.comidas.add({ fecha: hoyISO(), hora: '13:30', tipo: 'Almuerzo', nota: 'Pollo con arroz', imagen: foto1, fotoV: 1 });
   await esperar();
   await sincronizar(r, false);
@@ -190,7 +192,7 @@ async function main() {
   await sincronizar(r, false);
   assert.equal(enNube(ANA, 'comidas')[0].data.nota, 'Pollo con arroz y ensalada');
   assert.equal(subidas, antesSubidas, 'cambiar solo el texto no vuelve a subir la foto');
-  await db.comidas.update(idComida, { imagen: new Blob(['plato-2'], { type: 'image/jpeg' }), fotoV: 2 });
+  await db.comidas.update(idComida, { imagen: await paraGuardar(new Blob(['plato-2'], { type: 'image/jpeg' })), fotoV: 2 });
   await esperar();
   await sincronizar(r, false);
   assert.equal(subidas, antesSubidas + 1);
@@ -203,7 +205,7 @@ async function main() {
   // Y una comida cuya foto no se pudo bajar: el texto llega igual.
   filas.set(clave(ANA, 'comidas', 'c-sin-archivo'), { user_id: ANA, tabla: 'comidas', uid: 'c-sin-archivo', data: { fecha: hoyISO(), hora: '20:00', tipo: 'Cena', nota: 'Sopa', path: `${ANA}/comidas/no-existe.jpg`, fotoV: 1 }, deleted: false, updated_at: ahora() });
   await sincronizar(r, false);
-  assert.equal(await (await db.comidas.get(idComida))!.imagen!.text(), 'plato-3');
+  assert.equal(await aBlob((await db.comidas.get(idComida))!.imagen)!.text(), 'plato-3');
   assert.equal((await db.comidas.where('uid').equals('c-sin-archivo').first())?.nota, 'Sopa');
   console.log('✓ los cambios de otro celular llegan (y una foto que falla no frena la sincronización)');
 
@@ -211,7 +213,7 @@ async function main() {
   await db.open();
   await vincularBajando(r, false);
   const bajada = await db.comidas.where('uid').equals(uidComida).first();
-  assert.equal(await bajada!.imagen!.text(), 'plato-3');
+  assert.equal(await aBlob(bajada!.imagen)!.text(), 'plato-3');
   assert.equal(bajada!.nota, 'Pollo con arroz y ensalada');
   console.log('✓ un celular nuevo recupera el diario con sus fotos');
 
@@ -221,6 +223,27 @@ async function main() {
   assert.equal(enNube(ANA, 'comidas').filter((c) => c.uid === uidComida).length, 0);
   assert.ok(!archivos.has(rutaPlato), 'al borrar la comida se borra su foto');
   console.log('✓ borrar una comida la borra de la nube con su foto');
+
+  // ── iPhone: foto vieja guardada como Blob que ya no se puede leer ──
+  const idRota = await db.comidas.add({ fecha: hoyISO(), hora: '09:00', tipo: 'Desayuno', nota: 'Avena', imagen: await paraGuardar(new Blob(['avena'], { type: 'image/jpeg' })), fotoV: 7 });
+  await esperar();
+  await sincronizar(r, false);
+  const uidRota = (await db.comidas.get(idRota))!.uid!;
+  await db.comidas.update(idRota, { imagen: new Blob(['ROTA']) }); // como la guardaba la versión anterior
+  await esperar();
+  await db.comidas.where('uid').equals(uidRota).modify((c) => void delete c._p);
+  await db.meta.delete('archivosEnBytes');
+  const leer = Blob.prototype.arrayBuffer;
+  Blob.prototype.arrayBuffer = async function (this: Blob) {
+    if (this.size === 4) throw new Error('WebKitBlobResource error 1');
+    return leer.call(this);
+  };
+  await convertirArchivosSinCache();
+  Blob.prototype.arrayBuffer = leer;
+  assert.equal((await db.comidas.get(idRota))!.imagen, undefined, 'la foto ilegible se quita');
+  await sincronizar(r, false);
+  assert.equal(await aBlob((await db.comidas.get(idRota))!.imagen)!.text(), 'avena', 'y se vuelve a bajar de la nube');
+  console.log('✓ una foto que el iPhone ya no puede leer se recupera de la nube');
 
   console.log('\nTodas las pruebas de sincronización pasaron.');
 }

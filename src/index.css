@@ -119,3 +119,20 @@
   .confeti { display: none; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/*
+ * iPhone (Safari): los campos de fecha y hora tienen un ancho mínimo propio y se salen de su columna.
+ * Se les quita el estilo nativo para que respeten el ancho, y se alinea el texto a la izquierda.
+ */
+input[type='date'],
+input[type='time'] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 3rem;
+}
+input[type='date']::-webkit-date-and-time-value,
+input[type='time']::-webkit-date-and-time-value {
+  text-align: left;
+}

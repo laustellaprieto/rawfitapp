@@ -8,7 +8,8 @@
  * - La nube guarda cada registro en la tabla `datos` como JSON (ver supabase/schema.sql).
  */
 import Dexie, { type Table } from 'dexie';
-import { db, type Comida, type Foto, type Nutricion, type RegistroHabito, type Sincronizable } from './db';
+import { db, type ArchivoGuardado, type Comida, type Foto, type Nutricion, type RegistroHabito, type Sincronizable } from './db';
+import { aBlob, paraGuardar } from './image';
 
 /** Tablas que se suben y se bajan. El orden importa al aplicar: primero las que otras referencian. */
 export const SINCRONIZADAS = ['perfil', 'habitos', 'checkins', 'registros', 'fotos', 'mediciones', 'sesiones', 'ejerciciosPropios', 'logros', 'comidas'] as const;
@@ -166,19 +167,24 @@ async function subir(r: Remoto, compartirFotos: boolean) {
       const data = aDatos(p);
       if (nombre === 'fotos') {
         const f = p as unknown as Foto;
+        const imagen = aBlob(f.imagen);
+        if (!imagen) continue; // foto que no se pudo recuperar: no hay nada que subir
         data.path = rutaFoto(r.userId, f.uid!);
-        await r.subirArchivo('fotos', data.path as string, f.imagen);
+        await r.subirArchivo('fotos', data.path as string, imagen);
       }
       if (nombre === 'comidas') {
         const c = p as unknown as Comida;
         const ruta = rutaComida(r.userId, c.uid!);
         if (c.imagen) {
           // Solo se sube si la foto es nueva o cambió.
-          if (c.path !== ruta || c.subidaV !== c.fotoV) await r.subirArchivo('fotos', ruta, c.imagen);
+          if (c.path !== ruta || c.subidaV !== c.fotoV) await r.subirArchivo('fotos', ruta, aBlob(c.imagen)!);
           data.path = ruta;
-        } else {
+        } else if (c.fotoV === undefined) {
+          // La persona quitó la foto.
           delete data.path;
           if (c.path) await r.borrarArchivo('fotos', c.path).catch(() => {});
+        } else if (c.path) {
+          data.path = c.path; // la foto se perdió en este celular pero sigue en la nube: no se borra
         }
       }
       filas.push({ tabla: nombre, uid: p.uid!, data, deleted: false });
@@ -199,7 +205,7 @@ async function subir(r: Remoto, compartirFotos: boolean) {
                 if (c.imagen) {
                   c.path = rutaComida(r.userId, c.uid!);
                   c.subidaV = c.fotoV;
-                } else delete c.path;
+                } else if (c.fotoV === undefined) delete c.path;
               }
             });
       }
@@ -212,13 +218,13 @@ async function subir(r: Remoto, compartirFotos: boolean) {
 async function aplicar(r: Remoto, filas: FilaRemota[]) {
   const porTabla = (n: string) => filas.filter((f) => f.tabla === n);
   // Archivos: se bajan antes de abrir la transacción (no se puede esperar la red dentro de ella).
-  const archivos = new Map<string, Blob>();
+  const archivos = new Map<string, ArchivoGuardado>();
   for (const f of [...porTabla('fotos'), ...porTabla('nutricion')]) {
     if (f.deleted) continue;
     const ya = await tabla(f.tabla as NombreTabla).where('uid').equals(f.uid).first();
     const path = f.data.path as string;
     if (ya && (ya as { path?: string }).path === path && (ya.imagen || ya.archivo)) continue;
-    archivos.set(`${f.tabla}|${f.uid}`, await r.bajarArchivo(f.tabla as 'fotos' | 'nutricion', path));
+    archivos.set(`${f.tabla}|${f.uid}`, await paraGuardar(await r.bajarArchivo(f.tabla as 'fotos' | 'nutricion', path)));
   }
   for (const f of porTabla('comidas')) {
     if (f.deleted || !f.data.path) continue;
@@ -226,7 +232,7 @@ async function aplicar(r: Remoto, filas: FilaRemota[]) {
     if (ya?.imagen && ya.fotoV === f.data.fotoV) continue;
     // Si una foto del diario no baja, se guarda igual el texto (no se frena toda la sincronización).
     const foto = await r.bajarArchivo('fotos', f.data.path as string).catch(() => undefined);
-    if (foto) archivos.set(`comidas|${f.uid}`, foto);
+    if (foto) archivos.set(`comidas|${f.uid}`, await paraGuardar(foto));
   }
 
   await transaccionRemota(ORDEN as unknown as string[], async () => {
@@ -282,6 +288,47 @@ async function bajar(r: Remoto) {
   await db.meta.put({ clave: 'ultimoPull', valor: max });
 }
 
+/* ───────────── Archivos viejos guardados como Blob ───────────── */
+
+const CON_ARCHIVO = [
+  ['fotos', 'imagen'],
+  ['comidas', 'imagen'],
+  ['nutricion', 'archivo'],
+] as const;
+
+/**
+ * Pasa a bytes los archivos que versiones anteriores guardaron como Blob (en iPhone esos Blob
+ * pueden dejar de leerse). Si uno ya no se puede leer, se quita y se vuelve a bajar de la nube
+ * en la siguiente sincronización (si estaba en la nube).
+ */
+async function convertirArchivosViejos() {
+  if ((await db.meta.get('archivosEnBytes'))?.valor) return;
+  let perdidos = 0;
+  for (const [nombre, campo] of CON_ARCHIVO) {
+    const t = tabla(nombre);
+    const viejos = await t.filter((x) => x[campo] instanceof Blob).primaryKeys();
+    for (const id of viejos) {
+      const fila = await t.get(id);
+      const blob = fila?.[campo];
+      if (!(blob instanceof Blob)) continue;
+      const bytes = await paraGuardar(blob).catch(() => undefined);
+      if (!bytes) perdidos++;
+      await transaccionRemota([nombre], async () => {
+        await t.update(id, { [campo]: bytes });
+      });
+    }
+  }
+  // Fuerza a revisar toda la nube: lo que se perdió y estaba subido se vuelve a bajar.
+  if (perdidos) await db.meta.put({ clave: 'ultimoPull', valor: undefined });
+  await db.meta.put({ clave: 'archivosEnBytes', valor: true });
+}
+
+let conversion: Promise<void> | undefined;
+/** Se ejecuta una sola vez por sesión (y deja de hacer falta cuando ya se convirtió todo). */
+export const convertirArchivos = () => (conversion ??= convertirArchivosViejos().catch((e) => console.error(e)));
+/** Solo para las pruebas. */
+export const convertirArchivosSinCache = convertirArchivosViejos;
+
 /* ───────────── API ───────────── */
 
 let enCurso: Promise<void> | null = null;
@@ -291,6 +338,7 @@ export function sincronizar(r: Remoto, compartirFotos: boolean): Promise<void> {
   if (enCurso) return enCurso;
   enCurso = (async () => {
     try {
+      await convertirArchivos();
       await asegurarUids();
       await subir(r, compartirFotos);
       await bajar(r);

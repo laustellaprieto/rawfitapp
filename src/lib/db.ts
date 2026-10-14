@@ -6,6 +6,13 @@ export type Sexo = 'mujer' | 'hombre';
 export type NivelActividad = 'sedentaria' | 'ligera' | 'moderada' | 'alta' | 'muy-alta';
 export type MetaCalorias = 'definicion' | 'mantenimiento' | 'volumen';
 
+/**
+ * Archivo guardado en el celular (fotos, PDF). Se guarda como bytes (ArrayBuffer) porque en iPhone
+ * los Blob guardados en IndexedDB a veces dejan de poder leerse (la foto sale con un "?").
+ * Los registros anteriores pueden tener todavía un Blob: se convierten al abrir la app.
+ */
+export type ArchivoGuardado = Blob | { buf: ArrayBuffer; tipo: string };
+
 /** Campos que agrega la sincronización a cada registro. */
 export interface Sincronizable {
   uid?: string; // identificador global (igual en todos los dispositivos y en la nube)
@@ -68,7 +75,7 @@ export interface Foto extends Sincronizable {
   checkinId: number;
   checkinUid?: string;
   pose: Pose;
-  imagen: Blob;
+  imagen?: ArchivoGuardado;
 }
 
 export interface Serie {
@@ -120,7 +127,7 @@ export interface Comida extends Sincronizable {
   hora: string; // HH:MM
   tipo: TipoComida;
   nota?: string;
-  imagen?: Blob;
+  imagen?: ArchivoGuardado;
   fotoV?: number; // cambia cada vez que se cambia la foto (para saber si hay que volver a bajarla)
   path?: string; // ruta de la foto en la nube (la pone la sincronización)
   subidaV?: number; // fotoV que ya está en la nube (solo local)
@@ -159,7 +166,7 @@ export interface Nutricion extends Sincronizable {
   nombre: string;
   path: string; // ruta del archivo en la nube
   subidoEn: string; // ISO
-  archivo?: Blob; // copia local para verlo sin internet
+  archivo?: ArchivoGuardado; // copia local para verlo sin internet
 }
 
 /** Registro borrado en este dispositivo, pendiente de borrar en la nube. */

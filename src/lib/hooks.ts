@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useMemo, useState } from 'react';
-import { db } from './db';
+import { db, type ArchivoGuardado } from './db';
+import { aBlob } from './image';
 import { indexarRegistros } from './habitos';
 
 /** Perfil: undefined mientras carga, null si no existe (por ejemplo, mientras se descargan los datos de la cuenta). */
@@ -19,9 +20,10 @@ export function useRegistros() {
   return useMemo(() => indexarRegistros(registros ?? []), [registros]);
 }
 
-/** Crea una URL temporal para mostrar un Blob como imagen. */
-export function useBlobURL(blob: Blob | undefined) {
+/** Crea una URL temporal para mostrar una imagen (Blob o bytes guardados en el celular). */
+export function useBlobURL(archivo: ArchivoGuardado | undefined) {
   const [url, setUrl] = useState<string>();
+  const blob = useMemo(() => aBlob(archivo), [archivo]);
   useEffect(() => {
     if (!blob) return setUrl(undefined);
     const u = URL.createObjectURL(blob);

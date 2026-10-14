@@ -1,3 +1,17 @@
+import type { ArchivoGuardado } from './db';
+
+/** Prepara un archivo para guardarlo en el celular (como bytes, ver ArchivoGuardado). */
+export async function paraGuardar(b: Blob): Promise<{ buf: ArrayBuffer; tipo: string }> {
+  return { buf: await b.arrayBuffer(), tipo: b.type || 'image/jpeg' };
+}
+
+/** Blob en memoria (siempre legible) a partir de lo guardado en el celular. */
+export function aBlob(a: ArchivoGuardado | undefined): Blob | undefined {
+  if (!a) return undefined;
+  if (a instanceof Blob) return a;
+  return new Blob([a.buf], { type: a.tipo });
+}
+
 /** Reduce la foto para ahorrar espacio en el dispositivo (máx. 1600 px, JPEG). */
 export async function comprimirImagen(file: File, max = 1600, calidad = 0.85): Promise<Blob> {
   try {
