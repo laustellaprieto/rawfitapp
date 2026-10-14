@@ -5,8 +5,10 @@ import { Icon, type IconName } from './components/Icon';
 import { PiePagina } from './components/ui';
 import { useCelebracion } from './lib/celebraciones';
 import { usePerfil } from './lib/hooks';
-import { useCuenta } from './lib/nube';
+import { reintentarVinculo, useCuenta } from './lib/nube';
+import { guardarPerfil, perfilInicial } from './lib/db';
 import { DialogosCuenta } from './components/Cuenta';
+import { Cargando, Recuperacion } from './components/Recuperacion';
 import PanelCoach from './pages/coach/PanelCoach';
 import Ajustes from './pages/Ajustes';
 import Habitos from './pages/Habitos';
@@ -61,7 +63,8 @@ export default function App() {
     if (window.location.hash !== hash) history.pushState(null, '', hash || window.location.pathname);
   };
 
-  if (!perfil) return null; // cargando
+  if (perfil === undefined) return <Cargando />;
+  if (perfil === null) return <SinPerfil />;
   if (!perfil.onboardingCompleto)
     return (
       <>
@@ -97,6 +100,7 @@ export default function App() {
       </div>
 
       <main key={pagina} className="pb-segura px-4 pt-2 sm:px-6">
+        <Recuperacion compacto>
         {pagina === 'hoy' && <Hoy perfil={perfil} ir={ir} />}
         {pagina === 'habitos' && <Habitos ir={ir} />}
         {pagina === 'progreso' && <Progreso perfil={perfil} accion={accion} />}
@@ -104,6 +108,7 @@ export default function App() {
         {pagina === 'ejercicios' && <Ejercicios />}
         {pagina === 'ajustes' && <Ajustes perfil={perfil} ir={ir} />}
         {pagina === 'coach' && (esCoach ? <PanelCoach /> : <Hoy perfil={perfil} ir={ir} />)}
+        </Recuperacion>
         <PiePagina />
       </main>
 
@@ -130,4 +135,24 @@ export default function App() {
       <DialogosCuenta />
     </div>
   );
+}
+
+/** No hay perfil en el dispositivo: se están bajando los datos de la cuenta, o falló la descarga. */
+function SinPerfil() {
+  const cuenta = useCuenta();
+  useEffect(() => {
+    // Sin cuenta no hay nada que esperar: se crea un perfil nuevo (vuelve al onboarding).
+    if (cuenta.listo && !cuenta.sesion) guardarPerfil(perfilInicial());
+  }, [cuenta.listo, cuenta.sesion]);
+  if (cuenta.sync === 'error' || cuenta.sync === 'sin-conexion')
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-8 text-center">
+        <p className="titulo text-3xl">No pudimos descargar tus datos</p>
+        <p className="text-suave text-sm">Revisa tu conexión a internet e inténtalo de nuevo. Tus datos están guardados en tu cuenta.</p>
+        <button className="btn-oro" onClick={() => reintentarVinculo()}>
+          Reintentar
+        </button>
+      </div>
+    );
+  return <Cargando />;
 }

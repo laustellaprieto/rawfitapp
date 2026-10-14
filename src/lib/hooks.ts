@@ -3,9 +3,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { db } from './db';
 import { indexarRegistros } from './habitos';
 
-/** Perfil (undefined mientras carga). */
+/** Perfil: undefined mientras carga, null si no existe (por ejemplo, mientras se descargan los datos de la cuenta). */
 export function usePerfil() {
-  return useLiveQuery(() => db.perfil.get('main'), []);
+  return useLiveQuery(async () => (await db.perfil.get('main')) ?? null, []);
 }
 
 export function useHabitos() {

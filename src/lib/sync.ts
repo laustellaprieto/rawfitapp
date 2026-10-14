@@ -269,11 +269,10 @@ export async function vincularSubiendo(r: Remoto, compartirFotos: boolean) {
   await db.transaction('rw', SINCRONIZADAS.map((n) => db.table(n)), async () => {
     for (const n of SINCRONIZADAS) await tabla(n).toCollection().modify((x) => void (x._p = 1));
   });
-  await db.meta.bulkPut([
-    { clave: 'cuenta', valor: r.userId },
-    { clave: 'ultimoPull', valor: undefined },
-  ]);
+  await db.meta.put({ clave: 'ultimoPull', valor: undefined });
   await sincronizar(r, compartirFotos);
+  // Se marca como vinculado solo si todo salió bien (si falla, se reintenta desde cero).
+  await db.meta.put({ clave: 'cuenta', valor: r.userId });
 }
 
 /** Primera vez en este dispositivo y la cuenta ya tiene datos: reemplaza lo local por lo de la nube. */
@@ -282,11 +281,10 @@ export async function vincularBajando(r: Remoto, compartirFotos: boolean) {
     for (const n of ORDEN) await tabla(n).clear();
     await db.borrados.clear();
   });
-  await db.meta.bulkPut([
-    { clave: 'cuenta', valor: r.userId },
-    { clave: 'ultimoPull', valor: undefined },
-  ]);
+  await db.meta.put({ clave: 'ultimoPull', valor: undefined });
   await sincronizar(r, compartirFotos);
+  // Se marca como vinculado solo si todo salió bien (si falla, se reintenta desde cero).
+  await db.meta.put({ clave: 'cuenta', valor: r.userId });
 }
 
 /** Al activar "compartir fotos": marca todas las fotos para subirlas. */

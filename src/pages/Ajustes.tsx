@@ -9,6 +9,7 @@ import { EditorCalorias } from '../components/Calorias';
 import { SeccionCuenta } from '../components/Cuenta';
 import { useCuenta } from '../lib/nube';
 import type { Ir } from '../App';
+import { borrarErrores, erroresGuardados } from '../lib/version';
 import { EditorHabitos } from '../components/EditorHabitos';
 import { calcularCalorias, kcal, macrosDelPerfil, textoMeta } from '../lib/calorias';
 import { Icon } from '../components/Icon';
@@ -187,6 +188,8 @@ export default function Ajustes({ perfil, ir }: { perfil: Perfil; ir: Ir }) {
         </button>
       </section>}
 
+      <ErroresRecientes />
+
       <p className="text-suave flex items-start gap-2 px-1 text-xs">
         <Icon name="escudo" size={16} className="text-dorado shrink-0" />
         {AVISO_SALUD}
@@ -215,5 +218,45 @@ function Campo({ id, etiqueta, valor, onGuardar, decimal }: { id: string; etique
         className="campo"
       />
     </div>
+  );
+}
+
+/** Si hubo fallas, permite copiarlas para enviarlas a soporte. */
+function ErroresRecientes() {
+  const [errores, setErrores] = useState(erroresGuardados);
+  const [copiado, setCopiado] = useState(false);
+  if (!errores.length) return null;
+  const texto = errores.map((e) => `${e.fecha} · ${e.mensaje}\n${e.donde ?? ''}`).join('\n\n');
+  return (
+    <section className="tarjeta animate-entrada mb-4">
+      <h2 className="titulo text-2xl">Fallas recientes</h2>
+      <p className="text-suave mt-1 mb-3 text-sm">
+        La app registró {errores.length} {errores.length === 1 ? 'falla' : 'fallas'}. Si notaste algo raro, copia este reporte y envíaselo a soporte.
+      </p>
+      <div className="flex gap-2">
+        <button
+          className="btn-sec flex-1"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(texto);
+              setCopiado(true);
+            } catch {
+              prompt('Copia este texto:', texto);
+            }
+          }}
+        >
+          {copiado ? '¡Copiado!' : 'Copiar reporte'}
+        </button>
+        <button
+          className="btn-sec"
+          onClick={() => {
+            borrarErrores();
+            setErrores([]);
+          }}
+        >
+          Borrar
+        </button>
+      </div>
+    </section>
   );
 }

@@ -1,12 +1,15 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { registerSW } from 'virtual:pwa-register';
 import App from './App';
+import { Recuperacion } from './components/Recuperacion';
+import { AvisoVersion } from './components/AvisoVersion';
 import './lib/sync'; // registra el marcado de cambios antes de cualquier escritura
 import { iniciarNube } from './lib/nube';
+import { escucharErrores, iniciarActualizaciones } from './lib/version';
 import './index.css';
 
-registerSW({ immediate: true });
+escucharErrores();
+iniciarActualizaciones();
 iniciarNube();
 
 // Pide al navegador que no borre los datos automáticamente (fotos incluidas).
@@ -14,6 +17,9 @@ navigator.storage?.persist?.().catch(() => {});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <Recuperacion>
+      <App />
+    </Recuperacion>
+    <AvisoVersion />
   </StrictMode>,
 );

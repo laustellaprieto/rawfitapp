@@ -163,6 +163,9 @@ async function vincular() {
   }
 }
 
+/** Vuelve a intentar la primera descarga de la cuenta (si falló, por ejemplo, sin internet). */
+export const reintentarVinculo = () => vincular();
+
 /** Respuesta de la persona cuando su cuenta y su celular tienen datos. */
 export async function resolverVinculo(usarNube: boolean) {
   set({ decidirVinculo: false });
@@ -177,7 +180,19 @@ export async function resolverVinculo(usarNube: boolean) {
   }
 }
 
-async function alIniciarSesion(sesion: Session) {
+let iniciando: Promise<void> | null = null;
+let iniciandoPara = '';
+/** Evita que dos avisos de inicio de sesión (al abrir la app) vinculen dos veces a la vez. */
+function alIniciarSesion(sesion: Session): Promise<void> {
+  if (iniciando && iniciandoPara === sesion.user.id) return iniciando;
+  iniciandoPara = sesion.user.id;
+  iniciando = alIniciarSesionAhora(sesion).finally(() => {
+    iniciando = null;
+  });
+  return iniciando;
+}
+
+async function alIniciarSesionAhora(sesion: Session) {
   set({ sesion });
   try {
     await cargarPerfil();
@@ -198,10 +213,14 @@ export function iniciarNube() {
     set({ listo: true });
   });
   supabase.auth.onAuthStateChange((evento, sesion) => {
-    if (evento === 'PASSWORD_RECOVERY') set({ recuperando: true, sesion });
-    else if (evento === 'SIGNED_IN' && sesion && sesion.user.id !== estado.sesion?.user.id) void alIniciarSesion(sesion);
-    else if (evento === 'TOKEN_REFRESHED' && sesion) set({ sesion });
-    else if (evento === 'SIGNED_OUT') set({ sesion: null, perfil: null, sync: 'apagada' });
+    // Supabase recomienda no hacer otras consultas dentro de este aviso (se puede trabar):
+    // se hacen justo después con setTimeout.
+    setTimeout(() => {
+      if (evento === 'PASSWORD_RECOVERY') set({ recuperando: true, sesion });
+      else if (evento === 'SIGNED_IN' && sesion && sesion.user.id !== estado.sesion?.user.id) void alIniciarSesion(sesion);
+      else if (evento === 'TOKEN_REFRESHED' && sesion) set({ sesion });
+      else if (evento === 'SIGNED_OUT') set({ sesion: null, perfil: null, sync: 'apagada' });
+    });
   });
   onCambioLocal(() => estado.sesion && programarSync());
   window.addEventListener('online', () => programarSync(500));
