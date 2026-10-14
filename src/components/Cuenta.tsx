@@ -53,7 +53,7 @@ function FormAcceso({ modoInicial, onListo }: { modoInicial: Modo; onListo: () =
     try {
       if (modo === 'registro') {
         const { necesitaConfirmar } = await registrarse(email.trim(), password, nombre.trim());
-        if (necesitaConfirmar) setAviso(`Te enviamos un correo a ${email.trim()}. Ábrelo y toca el enlace para confirmar tu cuenta; después inicia sesión aquí.`);
+        if (necesitaConfirmar) setAviso(`Te enviamos un correo a ${email.trim()}. Ábrelo y toca el enlace para confirmar tu cuenta. Después vuelve a esta app e inicia sesión con tu correo y contraseña: tu cuenta queda lista y solo te faltará completar tus datos.`);
         else onListo();
       } else if (modo === 'login') {
         await iniciarSesion(email.trim(), password);

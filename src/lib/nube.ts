@@ -38,6 +38,8 @@ interface Estado {
   /** Llegó un enlace de "olvidé mi contraseña": hay que pedir la nueva. */
   recuperando: boolean;
   listo: boolean;
+  /** Primera conexión de la cuenta en este celular (subiendo o bajando sus datos). */
+  vinculando?: boolean;
 }
 
 let estado: Estado = { sesion: null, perfil: null, sync: 'apagada', decidirVinculo: false, recuperando: false, listo: !nubeConfigurada };
@@ -148,7 +150,7 @@ function programarSync(ms = 3000) {
 async function vincular() {
   const s = estado.sesion!;
   const r = remoto(s.user.id);
-  set({ sync: 'sincronizando' });
+  set({ sync: 'sincronizando', vinculando: true });
   try {
     const p = await cargarPerfil();
     const enNube = await r.contarFilas();
@@ -160,6 +162,8 @@ async function vincular() {
   } catch (e) {
     console.error(e);
     set({ sync: 'error', errorSync: (e as Error).message });
+  } finally {
+    set({ vinculando: false });
   }
 }
 

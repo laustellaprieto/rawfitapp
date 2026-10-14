@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { importarCopia } from '../lib/copia';
 import logo from '../../assets/logo.png';
 import { calcularMacros, valido } from '../lib/calorias';
@@ -11,6 +11,7 @@ import { EditorHabitos } from '../components/EditorHabitos';
 import { Icon } from '../components/Icon';
 import { PiePagina } from '../components/ui';
 import { HojaAcceso } from '../components/Cuenta';
+import { reintentarVinculo, useCuenta } from '../lib/nube';
 import { nubeConfigurada } from '../config';
 
 const PASOS = 4;
@@ -33,6 +34,13 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
   });
   const { todos } = useHabitos();
   const [acceso, setAcceso] = useState(false);
+  // Si inicia sesión o crea su cuenta aquí y la cuenta es nueva, sigue el onboarding (con su sesión ya abierta).
+  const cuenta = useCuenta();
+  const conSesion = !!cuenta.sesion;
+  const nombreCuenta = cuenta.perfil?.nombre || (cuenta.sesion?.user.user_metadata?.nombre as string | undefined) || '';
+  useEffect(() => {
+    if (nombreCuenta) setNombre((n) => n || nombreCuenta);
+  }, [nombreCuenta]);
   const archivo = useRef<HTMLInputElement>(null);
   const [errorImportar, setErrorImportar] = useState('');
   const cambiar = (d: Partial<DatosCaloriasTxt>) => setCal((c) => ({ ...c, ...d }));
@@ -94,7 +102,31 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
             <p className="text-suave text-xs font-medium tracking-[0.2em] uppercase">RawFit App</p>
             <h1 className="titulo mt-1 text-5xl leading-none">Te damos la bienvenida</h1>
             <p className="text-suave mt-3 mb-6">Aquí registras tus hábitos, medidas, fotos y entrenos, y ves el plan que te prepara tu coach.</p>
-            {nubeConfigurada && (
+            {conSesion && cuenta.vinculando && (
+              <div className="bg-campo/60 mb-6 flex items-center gap-3 rounded-2xl p-4" role="status">
+                <span className="border-dorado size-5 shrink-0 animate-spin rounded-full border-2 border-t-transparent" />
+                <p className="text-sm">Cargando tu cuenta…</p>
+              </div>
+            )}
+            {conSesion && !cuenta.vinculando && (
+              <div className="border-baja/30 bg-baja/[0.07] mb-6 rounded-2xl border p-4" role="status">
+                <p className="text-baja flex items-center gap-1.5 font-semibold">
+                  <Icon name="check" size={18} strokeWidth={2.6} /> Sesión iniciada
+                </p>
+                <p className="text-suave mt-0.5 truncate text-xs">{cuenta.sesion?.user.email}</p>
+                {cuenta.sync === 'error' || cuenta.sync === 'sin-conexion' ? (
+                  <p className="mt-2 text-sm">
+                    No pudimos revisar tu cuenta.{' '}
+                    <button type="button" onClick={() => reintentarVinculo()} className="text-dorado font-semibold underline">
+                      Reintentar
+                    </button>
+                  </p>
+                ) : (
+                  <p className="mt-2 text-sm">Tu cuenta está lista. Completa estos datos para empezar tu reto: se guardan en tu cuenta.</p>
+                )}
+              </div>
+            )}
+            {nubeConfigurada && !conSesion && (
               <>
                 <div className="border-dorado/30 bg-dorado/[0.07] rounded-2xl border p-4">
                   <p className="font-semibold">¿Tienes coach o ya tienes cuenta?</p>
@@ -227,8 +259,8 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
               <Icon name="izq" size={20} />
             </button>
           )}
-          <button className={`${paso === 0 && nubeConfigurada ? 'btn-sec' : 'btn-oro'} flex-1 !py-3.5`} disabled={!puedeSeguir}>
-            {paso === 0 && nubeConfigurada ? 'Continuar sin cuenta' : paso < PASOS - 1 ? 'Continuar' : '¡Empezar mi reto!'}
+          <button className={`${paso === 0 && nubeConfigurada && !conSesion ? 'btn-sec' : 'btn-oro'} flex-1 !py-3.5`} disabled={!puedeSeguir || (conSesion && cuenta.vinculando)}>
+            {paso === 0 && nubeConfigurada && !conSesion ? 'Continuar sin cuenta' : paso < PASOS - 1 ? 'Continuar' : '¡Empezar mi reto!'}
           </button>
         </div>
         {paso === 0 && (
