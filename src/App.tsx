@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import logo from '../assets/logo.png';
 import { Celebracion } from './components/Celebracion';
 import { Icon, type IconName } from './components/Icon';
@@ -61,6 +61,20 @@ export default function App() {
   const celebracion = useCelebracion(listo);
   const cuenta = useCuenta();
   const esCoach = cuenta.perfil?.rol === 'coach';
+
+  // Pestaña anterior (para saber desde dónde se abrió "Danos tu opinión").
+  const actual = useRef(pagina);
+  const previa = useRef<Pagina>();
+  useEffect(() => {
+    if (actual.current !== pagina) {
+      previa.current = actual.current;
+      actual.current = pagina;
+    }
+  }, [pagina]);
+  const pantalla = () => {
+    const nombre = (p?: Pagina) => NAV.find((n) => n.id === p)?.texto ?? (p === 'coach' ? 'Coach' : p);
+    return previa.current ? `Ajustes (venía de ${nombre(previa.current)})` : 'Ajustes';
+  };
 
   useEffect(() => {
     const f = () => {
@@ -129,7 +143,7 @@ export default function App() {
         {pagina === 'progreso' && <Progreso perfil={perfil} accion={accion} />}
         {pagina === 'entreno' && <Entreno accion={accion} />}
         {pagina === 'ejercicios' && <Ejercicios />}
-        {pagina === 'ajustes' && <Ajustes perfil={perfil} ir={ir} />}
+        {pagina === 'ajustes' && <Ajustes perfil={perfil} ir={ir} pantalla={pantalla} />}
         {pagina === 'coach' && (esCoach ? <PanelCoach /> : <Hoy perfil={perfil} ir={ir} />)}
         </Recuperacion>
         <PiePagina />

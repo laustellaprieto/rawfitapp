@@ -8,12 +8,15 @@ import { Encabezado, Segmentos, Vacio } from '../../components/ui';
 import ClienteDetalle from './ClienteDetalle';
 import { Avatar, nombreDe } from './comun';
 import { Plantillas } from './Plantillas';
+import { Opiniones } from './Opiniones';
+import { listarOpiniones } from '../../lib/feedback';
 
 
 export default function PanelCoach() {
   const [perfiles, setPerfiles] = useState<PerfilNube[]>();
   const [error, setError] = useState('');
-  const [vista, setVista] = useState<'clientes' | 'solicitudes' | 'plantillas'>('clientes');
+  const [vista, setVista] = useState<'clientes' | 'solicitudes' | 'plantillas' | 'feedback'>('clientes');
+  const [opinionesNuevas, setOpinionesNuevas] = useState<number>();
   const [q, setQ] = useState('');
   const [abierto, setAbierto] = useState<PerfilNube | null>(null);
 
@@ -21,6 +24,10 @@ export default function PanelCoach() {
     setError('');
     try {
       setPerfiles(await listarPerfiles());
+      // Cuántas opiniones nuevas hay (para mostrarlo en la pestaña Feedback).
+      listarOpiniones()
+        .then((l) => setOpinionesNuevas(l.filter((o) => o.estado === 'nueva').length))
+        .catch(() => {});
     } catch (e) {
       setError(navigator.onLine ? traducirError(e) : 'El panel de coach necesita internet.');
     }
@@ -65,6 +72,7 @@ export default function PanelCoach() {
             { valor: 'clientes' as const, texto: `Clientes (${clientes.length})` },
             { valor: 'solicitudes' as const, texto: `Solicitudes${pendientes.length ? ` (${pendientes.length})` : ''}` },
             { valor: 'plantillas' as const, texto: 'Plantillas' },
+            { valor: 'feedback' as const, texto: `Feedback${opinionesNuevas ? ` (${opinionesNuevas})` : ''}` },
           ]}
           valor={vista}
           onChange={setVista}
@@ -74,9 +82,10 @@ export default function PanelCoach() {
         </button>
       </div>
 
-      {perfiles === undefined && !error && vista !== 'plantillas' && <p className="text-suave py-10 text-center text-sm">Cargando…</p>}
+      {perfiles === undefined && !error && vista !== 'plantillas' && vista !== 'feedback' && <p className="text-suave py-10 text-center text-sm">Cargando…</p>}
 
       {vista === 'plantillas' && <Plantillas />}
+      {vista === 'feedback' && <Opiniones onNuevas={setOpinionesNuevas} />}
 
       {perfiles && vista === 'solicitudes' && (
         pendientes.length === 0 ? (

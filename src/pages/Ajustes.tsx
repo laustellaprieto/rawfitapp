@@ -14,6 +14,8 @@ import { EditorHabitos } from '../components/EditorHabitos';
 import { calcularCalorias, kcal, macrosDelPerfil, textoMeta } from '../lib/calorias';
 import { Icon } from '../components/Icon';
 import { Sheet } from '../components/Sheet';
+import { TarjetaOpinion } from '../components/Opinion';
+import { nubeConfigurada } from '../config';
 import { Encabezado } from '../components/ui';
 
 function useEspacio() {
@@ -26,7 +28,7 @@ function useEspacio() {
 
 const mb = (b: number) => `${num(b / 1024 / 1024, 1)} MB`;
 
-export default function Ajustes({ perfil, ir }: { perfil: Perfil; ir: Ir }) {
+export default function Ajustes({ perfil, ir, pantalla }: { perfil: Perfil; ir: Ir; pantalla: () => string }) {
   const usado = useEspacio();
   const { todos } = useHabitos();
   const archivo = useRef<HTMLInputElement>(null);
@@ -75,6 +77,8 @@ export default function Ajustes({ perfil, ir }: { perfil: Perfil; ir: Ir }) {
   return (
     <>
       <Encabezado subtitulo="Tu app, a tu manera" titulo="Ajustes" />
+
+      {nubeConfigurada && <TarjetaOpinion nombre={perfil.nombre} pantalla={pantalla} />}
 
       <SeccionCuenta onAbrirCoach={() => ir('coach')} />
 
