@@ -1,13 +1,20 @@
 import { useRef, useState } from 'react';
 import { enviarOpinion, MAX_TEXTO_OPINION, TIPOS_OPINION, type TipoOpinion } from '../lib/feedback';
-import { useBlobURL } from '../lib/hooks';
+import { useBlobURL, useDiasDeUso } from '../lib/hooks';
+import { useCuenta } from '../lib/nube';
 import { Icon } from './Icon';
 import { Sheet } from './Sheet';
 
-/** Tarjeta de Ajustes con el botón "Danos tu opinión" (para todas las personas, con o sin cuenta). */
+/** Tarjeta de Ajustes con el botón "Danos tu opinión" (con o sin cuenta, después de 5 días de uso). */
+/** Se pide la opinión a quien ya usó la app al menos estos días distintos (la coach la ve siempre). */
+export const DIAS_PARA_OPINAR = 5;
+
 export function TarjetaOpinion({ nombre, pantalla }: { nombre: string; pantalla: () => string }) {
   const [abierto, setAbierto] = useState(false);
   const [desde, setDesde] = useState('');
+  const dias = useDiasDeUso();
+  const esCoach = useCuenta().perfil?.rol === 'coach';
+  if (!esCoach && (dias ?? 0) < DIAS_PARA_OPINAR) return null;
   return (
     <section className="tarjeta animate-entrada !border-dorado/25 mb-4">
       <h2 className="titulo text-2xl">¿Cómo te va con la app?</h2>

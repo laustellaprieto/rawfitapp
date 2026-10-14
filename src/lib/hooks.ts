@@ -32,3 +32,13 @@ export function useBlobURL(archivo: ArchivoGuardado | undefined) {
   }, [blob]);
   return url;
 }
+
+/** Días distintos en los que la persona registró algo (hábitos, medidas, entrenos, check-ins o comidas). */
+export function useDiasDeUso(): number | undefined {
+  return useLiveQuery(async () => {
+    const tablas = [db.registros, db.mediciones, db.sesiones, db.checkins, db.comidas];
+    const dias = new Set<string>();
+    for (const t of tablas) for (const f of await t.orderBy('fecha').uniqueKeys()) dias.add(String(f));
+    return dias.size;
+  }, []);
+}
