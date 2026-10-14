@@ -169,7 +169,7 @@ async function storage(req: IncomingMessage, res: ServerResponse, ruta: string) 
       if (!ya.rowCount) await c.query(`insert into storage.objects (bucket_id, name) values ($1, $2)`, [bucket, nombre]);
       else await c.query(`update storage.objects set name = name where bucket_id = $1 and name = $2`, [bucket, nombre]);
     });
-    archivos.set(`${bucket}/${nombre}`, { tipo: String(req.headers['content-type'] ?? 'application/octet-stream'), datos });
+    archivos.set(`${bucket}/${nombre}`, desempaquetar(String(req.headers['content-type'] ?? 'application/octet-stream'), datos));
     return enviar(res, 200, { Key: `${bucket}/${nombre}` });
   }
   if (req.method === 'GET' && (m = /^object\/(?:authenticated\/)?([^/]+)\/(.+)$/.exec(ruta))) {
@@ -181,6 +181,25 @@ async function storage(req: IncomingMessage, res: ServerResponse, ruta: string) 
     return res.end(a.datos);
   }
   enviar(res, 404, { message: 'ruta de storage no soportada ' + ruta });
+}
+
+/** supabase-js sube los Blob como multipart/form-data: se guarda solo el archivo (como hace Supabase). */
+function desempaquetar(tipo: string, datos: Buffer): { tipo: string; datos: Buffer } {
+  const limite = /boundary=(.+)$/.exec(tipo)?.[1];
+  if (!tipo.startsWith('multipart/form-data') || !limite) return { tipo, datos };
+  const sep = Buffer.from(`--${limite}`);
+  for (let i = datos.indexOf(sep); i >= 0; ) {
+    const sig = datos.indexOf(sep, i + sep.length);
+    if (sig < 0) break;
+    const parte = datos.subarray(i + sep.length + 2, sig - 2); // sin \r\n
+    const fin = parte.indexOf('\r\n\r\n');
+    const cab = parte.subarray(0, fin).toString();
+    if (/filename=/.test(cab) || /name="(?:file|)"/.test(cab)) {
+      return { tipo: /content-type:\s*([^\r\n]+)/i.exec(cab)?.[1] ?? 'application/octet-stream', datos: Buffer.from(parte.subarray(fin + 4)) };
+    }
+    i = sig;
+  }
+  return { tipo, datos };
 }
 
 async function auth(req: IncomingMessage, res: ServerResponse, url: URL, ruta: string) {

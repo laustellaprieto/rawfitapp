@@ -312,8 +312,8 @@ export function SeccionCuenta({ onAbrirCoach }: { onAbrirCoach: () => void }) {
                 <p className="text-baja mt-0.5 text-sm font-semibold">✓ Eres cliente de {NOMBRE_COACH}</p>
                 <label className="mt-3 flex items-center justify-between gap-3">
                   <span className="text-sm">
-                    Compartir mis fotos de progreso con mi coach
-                    <span className="text-suave block text-xs">Si lo apagas, se borran de la nube y quedan solo en tu celular.</span>
+                    Compartir mis fotos con mi coach
+                    <span className="text-suave block text-xs">Fotos de progreso y del diario de comidas. Si lo apagas, tu coach deja de verlas y tus fotos de progreso quedan solo en tu celular.</span>
                   </span>
                   <button
                     type="button"

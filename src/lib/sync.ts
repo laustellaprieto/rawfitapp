@@ -8,10 +8,10 @@
  * - La nube guarda cada registro en la tabla `datos` como JSON (ver supabase/schema.sql).
  */
 import Dexie, { type Table } from 'dexie';
-import { db, type Foto, type Nutricion, type RegistroHabito, type Sincronizable } from './db';
+import { db, type Comida, type Foto, type Nutricion, type RegistroHabito, type Sincronizable } from './db';
 
 /** Tablas que se suben y se bajan. El orden importa al aplicar: primero las que otras referencian. */
-export const SINCRONIZADAS = ['perfil', 'habitos', 'checkins', 'registros', 'fotos', 'mediciones', 'sesiones', 'ejerciciosPropios', 'logros'] as const;
+export const SINCRONIZADAS = ['perfil', 'habitos', 'checkins', 'registros', 'fotos', 'mediciones', 'sesiones', 'ejerciciosPropios', 'logros', 'comidas'] as const;
 /** Tablas que solo escribe la coach: el cliente solo las baja. */
 export const SOLO_BAJAR = ['rutinas', 'nutricion'] as const;
 type NombreTabla = (typeof SINCRONIZADAS)[number] | (typeof SOLO_BAJAR)[number];
@@ -99,7 +99,7 @@ for (const nombre of SINCRONIZADAS) {
 /** Asegura que todos los registros tengan uid (por ejemplo, después de importar una copia vieja). */
 export async function asegurarUids() {
   await db.transaction('rw', [...SINCRONIZADAS.map((n) => db.table(n))], async () => {
-    for (const n of ['habitos', 'checkins', 'mediciones', 'sesiones', 'ejerciciosPropios'] as const) {
+    for (const n of ['habitos', 'checkins', 'mediciones', 'sesiones', 'ejerciciosPropios', 'comidas'] as const) {
       await tabla(n).filter((r) => !r.uid).modify((r) => {
         r.uid = crypto.randomUUID();
       });
@@ -125,7 +125,7 @@ export async function asegurarUids() {
 
 /* ───────────── Conversión local ↔ nube ───────────── */
 
-const SIN_SUBIR = new Set(['id', '_p', 'uid', 'imagen', 'habitoId', 'checkinId', 'archivo']);
+const SIN_SUBIR = new Set(['id', '_p', 'uid', 'imagen', 'habitoId', 'checkinId', 'archivo', 'subidaV']);
 
 function aDatos(r: Record<string, unknown>): Record<string, unknown> {
   const d: Record<string, unknown> = {};
@@ -134,6 +134,11 @@ function aDatos(r: Record<string, unknown>): Record<string, unknown> {
 }
 
 const rutaFoto = (userId: string, uid: string) => `${userId}/${uid}.jpg`;
+/**
+ * Fotos del diario de comidas: van al bucket de fotos dentro de la carpeta de la persona,
+ * así que solo ella las ve; la coach, solo si la persona comparte sus fotos (mismas reglas de la nube).
+ */
+const rutaComida = (userId: string, uid: string) => `${userId}/comidas/${uid}.jpg`;
 const mismo = (a: Record<string, unknown>, b: Record<string, unknown>) => JSON.stringify(aDatos(a)) === JSON.stringify(aDatos(b));
 
 /* ───────────── Subir ───────────── */
@@ -148,6 +153,7 @@ async function subir(r: Remoto, compartirFotos: boolean) {
   }
   if (filasBorradas.length) await r.guardar(filasBorradas);
   for (const f of filasBorradas.filter((x) => x.tabla === 'fotos')) await r.borrarArchivo('fotos', rutaFoto(r.userId, f.uid)).catch(() => {});
+  for (const f of filasBorradas.filter((x) => x.tabla === 'comidas')) await r.borrarArchivo('fotos', rutaComida(r.userId, f.uid)).catch(() => {});
   if (borrados.length) await db.borrados.bulkDelete(borrados.map((b) => b.clave));
 
   // 2) Registros nuevos o cambiados
@@ -163,6 +169,18 @@ async function subir(r: Remoto, compartirFotos: boolean) {
         data.path = rutaFoto(r.userId, f.uid!);
         await r.subirArchivo('fotos', data.path as string, f.imagen);
       }
+      if (nombre === 'comidas') {
+        const c = p as unknown as Comida;
+        const ruta = rutaComida(r.userId, c.uid!);
+        if (c.imagen) {
+          // Solo se sube si la foto es nueva o cambió.
+          if (c.path !== ruta || c.subidaV !== c.fotoV) await r.subirArchivo('fotos', ruta, c.imagen);
+          data.path = ruta;
+        } else {
+          delete data.path;
+          if (c.path) await r.borrarArchivo('fotos', c.path).catch(() => {});
+        }
+      }
       filas.push({ tabla: nombre, uid: p.uid!, data, deleted: false });
     }
     for (let i = 0; i < filas.length; i += 200) await r.guardar(filas.slice(i, i + 200));
@@ -170,7 +188,20 @@ async function subir(r: Remoto, compartirFotos: boolean) {
     await transaccionRemota([nombre], async () => {
       for (const p of pendientes) {
         const actual = await tabla(nombre).where('uid').equals(p.uid!).first();
-        if (actual && mismo(actual, p)) await tabla(nombre).where('uid').equals(p.uid!).modify((x) => void delete x._p);
+        if (actual && mismo(actual, p))
+          await tabla(nombre)
+            .where('uid')
+            .equals(p.uid!)
+            .modify((x) => {
+              delete x._p;
+              if (nombre === 'comidas') {
+                const c = x as unknown as Comida;
+                if (c.imagen) {
+                  c.path = rutaComida(r.userId, c.uid!);
+                  c.subidaV = c.fotoV;
+                } else delete c.path;
+              }
+            });
       }
     });
   }
@@ -188,6 +219,14 @@ async function aplicar(r: Remoto, filas: FilaRemota[]) {
     const path = f.data.path as string;
     if (ya && (ya as { path?: string }).path === path && (ya.imagen || ya.archivo)) continue;
     archivos.set(`${f.tabla}|${f.uid}`, await r.bajarArchivo(f.tabla as 'fotos' | 'nutricion', path));
+  }
+  for (const f of porTabla('comidas')) {
+    if (f.deleted || !f.data.path) continue;
+    const ya = (await db.comidas.where('uid').equals(f.uid).first()) as Comida | undefined;
+    if (ya?.imagen && ya.fotoV === f.data.fotoV) continue;
+    // Si una foto del diario no baja, se guarda igual el texto (no se frena toda la sincronización).
+    const foto = await r.bajarArchivo('fotos', f.data.path as string).catch(() => undefined);
+    if (foto) archivos.set(`comidas|${f.uid}`, foto);
   }
 
   await transaccionRemota(ORDEN as unknown as string[], async () => {
@@ -217,6 +256,11 @@ async function aplicar(r: Remoto, filas: FilaRemota[]) {
           (nuevo as unknown as Foto).checkinId = c.id!;
           nuevo.imagen = archivos.get(`fotos|${f.uid}`) ?? (local as unknown as Foto | undefined)?.imagen;
           if (!nuevo.imagen) continue;
+        }
+        if (nombre === 'comidas') {
+          const previa = local as unknown as Comida | undefined;
+          nuevo.subidaV = f.data.fotoV;
+          nuevo.imagen = f.data.path ? (archivos.get(`comidas|${f.uid}`) ?? (previa?.fotoV === f.data.fotoV ? previa?.imagen : undefined)) : undefined;
         }
         if (nombre === 'nutricion') {
           (nuevo as unknown as Nutricion).archivo = archivos.get(`nutricion|${f.uid}`) ?? (local as unknown as Nutricion | undefined)?.archivo;

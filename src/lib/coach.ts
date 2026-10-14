@@ -1,5 +1,5 @@
 /** Funciones del panel de coach (siempre con internet: leen y escriben directo en la nube). */
-import type { Checkin, Habito, Medicion, Nutricion, Perfil, RegistroHabito, Rutina, Sesion } from './db';
+import type { Checkin, Comida, Habito, Medicion, Nutricion, Perfil, RegistroHabito, Rutina, Sesion } from './db';
 import { supabase, traducirError, type PerfilNube } from './nube';
 
 const sb = () => {
@@ -30,6 +30,7 @@ export interface DatosCliente {
   sesiones: Sesion[];
   rutinas: (Rutina & { uid: string })[];
   nutricion: (Nutricion & { uid: string })[];
+  comidas: (Comida & { uid: string })[];
 }
 
 export async function cargarCliente(id: string): Promise<DatosCliente> {
@@ -58,6 +59,7 @@ export async function cargarCliente(id: string): Promise<DatosCliente> {
     sesiones: de<Sesion>('sesiones').sort((a, b) => b.fecha.localeCompare(a.fecha)),
     rutinas: de<Rutina & { uid: string }>('rutinas').sort((a, b) => a.orden - b.orden),
     nutricion: de<Nutricion & { uid: string }>('nutricion').sort((a, b) => b.subidoEn.localeCompare(a.subidoEn)),
+    comidas: de<Comida & { uid: string }>('comidas').sort((a, b) => b.fecha.localeCompare(a.fecha) || b.hora.localeCompare(a.hora)),
   };
 }
 

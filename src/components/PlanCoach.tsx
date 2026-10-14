@@ -99,9 +99,18 @@ export function EntrenoDeHoy({ onEmpezar }: { onEmpezar: (r: Rutina) => void }) 
 }
 
 /** Guía de alimentación en PDF que subió la coach. */
-export function TarjetaNutricion() {
-  const planes = useLiveQuery(() => db.nutricion.toArray(), []) ?? [];
-  if (!planes.length) return null;
+export function TarjetaNutricion({ mostrarVacia = false }: { mostrarVacia?: boolean }) {
+  const planes = useLiveQuery(() => db.nutricion.toArray(), []);
+  if (!planes) return null;
+  if (!planes.length)
+    return mostrarVacia ? (
+      <section className="tarjeta animate-entrada mb-6 flex items-center gap-3 !p-3.5">
+        <span className="bg-campo text-suave grid size-10 shrink-0 place-items-center rounded-xl">
+          <Icon name="documento" size={20} />
+        </span>
+        <p className="text-suave text-sm">Cuando tu coach te comparta tu guía de alimentación, la verás aquí.</p>
+      </section>
+    ) : null;
   const ordenados = [...planes].sort((a, b) => b.subidoEn.localeCompare(a.subidoEn));
   return (
     <section className="tarjeta animate-entrada mb-4">

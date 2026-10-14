@@ -15,6 +15,7 @@ import Habitos from './pages/Habitos';
 import Hoy from './pages/Hoy';
 import Onboarding from './pages/Onboarding';
 import Ejercicios from './pages/Ejercicios';
+import Comida from './pages/Comida';
 import Progreso from './pages/progreso/Progreso';
 import Entreno from './pages/entreno/Entreno';
 
@@ -33,13 +34,14 @@ const medirNav = (() => {
   };
 })();
 
-export type Pagina = 'hoy' | 'habitos' | 'progreso' | 'entreno' | 'ejercicios' | 'ajustes' | 'coach';
+export type Pagina = 'hoy' | 'habitos' | 'comida' | 'progreso' | 'entreno' | 'ejercicios' | 'ajustes' | 'coach';
 /** Navega a una pestaña; `accion` abre algo dentro (ej. el formulario de medición). */
 export type Ir = (p: Pagina, accion?: string) => void;
 
 const NAV: { id: Pagina; texto: string; icono: IconName }[] = [
   { id: 'hoy', texto: 'Hoy', icono: 'inicio' },
   { id: 'habitos', texto: 'Hábitos', icono: 'habitos' },
+  { id: 'comida', texto: 'Comida', icono: 'comida' },
   { id: 'progreso', texto: 'Progreso', icono: 'medidas' },
   { id: 'entreno', texto: 'Entreno', icono: 'entrenos' },
   { id: 'ejercicios', texto: 'Ejercicios', icono: 'lista' },
@@ -123,6 +125,7 @@ export default function App() {
         <Recuperacion compacto>
         {pagina === 'hoy' && <Hoy perfil={perfil} ir={ir} />}
         {pagina === 'habitos' && <Habitos ir={ir} />}
+        {pagina === 'comida' && <Comida />}
         {pagina === 'progreso' && <Progreso perfil={perfil} accion={accion} />}
         {pagina === 'entreno' && <Entreno accion={accion} />}
         {pagina === 'ejercicios' && <Ejercicios />}
@@ -133,7 +136,7 @@ export default function App() {
       </main>
 
       <nav ref={medirNav} className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:pb-4">
-        <div className="bg-tarjeta/90 mx-auto grid max-w-md grid-cols-5 rounded-3xl border border-white/[0.06] p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl">
+        <div className="bg-tarjeta/90 mx-auto grid max-w-md grid-cols-6 rounded-3xl border border-white/[0.06] p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl">
           {NAV.map((n) => {
             const activo = pagina === n.id;
             return (

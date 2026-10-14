@@ -18,6 +18,7 @@ const P: Record<string, string> = {
   info: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 11v5M12 8h.01',
   check: 'M5 12.5l4.5 4.5L19 7.5',
   cerrar: 'M6 6l12 12M18 6 6 18',
+  comida: 'M7 3v18M4 3v5a3 3 0 0 0 6 0V3M17 21V3c-2.2 1-3.5 3.6-3.5 7.5 0 1.8.9 2.5 3.5 2.5',
   copiar: 'M9 9h11v12H9zM15 9V3H4v12h5',
   calendario: 'M4 6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM4 10h16M8 3v4M16 3v4',
   puntos: 'M5 12h.01M12 12h.01M19 12h.01',

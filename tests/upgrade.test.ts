@@ -19,7 +19,8 @@ async function main() {
 
   const { db } = await import('../src/lib/db');
   await db.open();
-  assert.equal(db.verno, 2);
+  assert.equal(db.verno, 3);
+  assert.equal(await db.comidas.count(), 0, 'v3 agrega el diario de comidas vacío');
   const h = (await db.habitos.toArray())[0];
   assert.ok(h.uid);
   const regs = await db.registros.toArray();

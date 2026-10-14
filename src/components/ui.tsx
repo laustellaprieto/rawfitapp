@@ -102,7 +102,9 @@ export function Segmentos<T extends string>({ opciones, valor, onChange }: { opc
       {opciones.map((o) => (
         <button
           key={o.valor}
+          type="button"
           onClick={() => onChange(o.valor)}
+          aria-pressed={o.valor === valor}
           className={`chip shrink-0 ${o.valor === valor ? 'bg-dorado text-fondo' : 'bg-campo text-suave hover:text-texto'}`}
         >
           {o.texto}

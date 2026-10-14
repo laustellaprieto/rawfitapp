@@ -123,7 +123,7 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
               </p>
               {nubeConfigurada && (
                 <p className="text-suave mt-1">
-                  <b className="text-texto">Con cuenta:</b> tus hábitos, medidas y entrenos también se guardan en la nube, así los recuperas en otro celular y tu coach puede ver tu progreso. Tus fotos se quedan en tu celular, salvo que decidas compartirlas con tu coach.
+                  <b className="text-texto">Con cuenta:</b> tus hábitos, medidas, entrenos y diario de comidas también se guardan en la nube, así los recuperas en otro celular y tu coach puede ver tu progreso. Tu coach solo ve tus fotos si decides compartirlas.
                 </p>
               )}
             </div>

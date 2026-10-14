@@ -12,6 +12,7 @@ import { marcarFotosParaSubir, retirarFotosDeLaNube, sincronizar, vincularBajand
 let reloj = 0;
 const filas = new Map<string, FilaRemota & { user_id: string }>();
 const archivos = new Map<string, Blob>();
+let subidas = 0;
 const ahora = () => new Date(Date.UTC(2026, 0, 1) + ++reloj * 1000).toISOString();
 const clave = (u: string, t: string, id: string) => `${u}|${t}|${id}`;
 
@@ -31,6 +32,7 @@ function nube(userId: string): Remoto {
       for (const f of fs) filas.set(clave(userId, f.tabla, f.uid), { ...structuredClone(f), user_id: userId, updated_at: ahora() });
     },
     async subirArchivo(b, ruta, a) {
+      subidas++;
       archivos.set(`${b}/${ruta}`, a);
     },
     async bajarArchivo(b, ruta) {
@@ -167,6 +169,58 @@ async function main() {
   assert.ok(![...archivos.keys()].some((k) => k.startsWith('fotos/')));
   assert.equal(await db.fotos.count(), 1, 'la foto sigue en el celular');
   console.log('✓ al dejar de compartir, las fotos salen de la nube');
+
+  // ── Diario de comidas ──
+  const foto1 = new Blob(['plato-1'], { type: 'image/jpeg' });
+  const idComida = await db.comidas.add({ fecha: hoyISO(), hora: '13:30', tipo: 'Almuerzo', nota: 'Pollo con arroz', imagen: foto1, fotoV: 1 });
+  await esperar();
+  await sincronizar(r, false);
+  const filaComida = enNube(ANA, 'comidas')[0];
+  assert.equal(filaComida.data.nota, 'Pollo con arroz');
+  assert.ok(!('imagen' in filaComida.data), 'la imagen no va dentro del JSON');
+  const rutaPlato = `fotos/${filaComida.data.path}`;
+  assert.equal(await archivos.get(rutaPlato)!.text(), 'plato-1', 'la foto de la comida sube aunque no se compartan fotos (queda privada)');
+  const uidComida = (await db.comidas.get(idComida))!.uid!;
+  assert.equal(filaComida.data.path, `${ANA}/comidas/${uidComida}.jpg`);
+  console.log('✓ una comida con foto se sube');
+
+  const antesSubidas = subidas;
+  await db.comidas.update(idComida, { nota: 'Pollo con arroz y ensalada' });
+  await esperar();
+  await sincronizar(r, false);
+  assert.equal(enNube(ANA, 'comidas')[0].data.nota, 'Pollo con arroz y ensalada');
+  assert.equal(subidas, antesSubidas, 'cambiar solo el texto no vuelve a subir la foto');
+  await db.comidas.update(idComida, { imagen: new Blob(['plato-2'], { type: 'image/jpeg' }), fotoV: 2 });
+  await esperar();
+  await sincronizar(r, false);
+  assert.equal(subidas, antesSubidas + 1);
+  assert.equal(await archivos.get(rutaPlato)!.text(), 'plato-2');
+  console.log('✓ editar el texto no re-sube la foto; cambiar la foto sí');
+
+  // Otro celular cambia la foto: este la baja.
+  archivos.set(rutaPlato, new Blob(['plato-3'], { type: 'image/jpeg' }));
+  filas.set(clave(ANA, 'comidas', uidComida), { ...filas.get(clave(ANA, 'comidas', uidComida))!, data: { ...enNube(ANA, 'comidas')[0].data, fotoV: 3 }, updated_at: ahora() });
+  // Y una comida cuya foto no se pudo bajar: el texto llega igual.
+  filas.set(clave(ANA, 'comidas', 'c-sin-archivo'), { user_id: ANA, tabla: 'comidas', uid: 'c-sin-archivo', data: { fecha: hoyISO(), hora: '20:00', tipo: 'Cena', nota: 'Sopa', path: `${ANA}/comidas/no-existe.jpg`, fotoV: 1 }, deleted: false, updated_at: ahora() });
+  await sincronizar(r, false);
+  assert.equal(await (await db.comidas.get(idComida))!.imagen!.text(), 'plato-3');
+  assert.equal((await db.comidas.where('uid').equals('c-sin-archivo').first())?.nota, 'Sopa');
+  console.log('✓ los cambios de otro celular llegan (y una foto que falla no frena la sincronización)');
+
+  await db.delete();
+  await db.open();
+  await vincularBajando(r, false);
+  const bajada = await db.comidas.where('uid').equals(uidComida).first();
+  assert.equal(await bajada!.imagen!.text(), 'plato-3');
+  assert.equal(bajada!.nota, 'Pollo con arroz y ensalada');
+  console.log('✓ un celular nuevo recupera el diario con sus fotos');
+
+  await db.comidas.delete(bajada!.id!);
+  await esperar();
+  await sincronizar(r, false);
+  assert.equal(enNube(ANA, 'comidas').filter((c) => c.uid === uidComida).length, 0);
+  assert.ok(!archivos.has(rutaPlato), 'al borrar la comida se borra su foto');
+  console.log('✓ borrar una comida la borra de la nube con su foto');
 
   console.log('\nTodas las pruebas de sincronización pasaron.');
 }

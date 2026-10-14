@@ -543,7 +543,7 @@ function GuiaAlimentacion({ d, cliente, recargar }: { d: DatosCliente; cliente: 
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-suave text-sm">La guía más reciente aparece como “Guía actual” en la pantalla Hoy de tu cliente, y la puede abrir sin internet.</p>
+      <p className="text-suave text-sm">La guía más reciente aparece como “Guía actual” en las pestañas Comida y Hoy de tu cliente, y la puede abrir sin internet. Abajo ves su diario de comidas.</p>
       <button className="btn-oro w-full" onClick={() => setAbierto(true)}>
         <Icon name="subir" size={18} /> Subir guía de alimentación
       </button>
@@ -600,7 +600,69 @@ function GuiaAlimentacion({ d, cliente, recargar }: { d: DatosCliente; cliente: 
           />
         )}
       </Sheet>
+
+      <DiarioComidas d={d} cliente={cliente} />
     </div>
+  );
+}
+
+/** Diario de comidas del cliente (solo lectura). Las fotos se ven solo si el cliente comparte sus fotos. */
+function DiarioComidas({ d, cliente }: { d: DatosCliente; cliente: PerfilNube }) {
+  const [cuantas, setCuantas] = useState(20);
+  const [urls, setUrls] = useState<Record<string, string>>({});
+  const visibles = d.comidas.slice(0, cuantas);
+  useEffect(() => {
+    if (!cliente.compartir_fotos) return;
+    let vivo = true;
+    (async () => {
+      const out: Record<string, string> = {};
+      for (const c of visibles) if (c.path) out[c.uid] = await urlFirmada('fotos', c.path).catch(() => '');
+      if (vivo) setUrls(out);
+    })();
+    return () => {
+      vivo = false;
+    };
+  }, [d.comidas, cuantas, cliente.compartir_fotos]);
+
+  return (
+    <section className="mt-3">
+      <h2 className="titulo text-champagne text-2xl leading-none">Diario de comidas</h2>
+      {!cliente.compartir_fotos && d.comidas.some((c) => c.path) && <p className="text-suave mt-1 text-xs">Tu cliente no comparte sus fotos: solo ves sus comentarios.</p>}
+      {d.comidas.length === 0 ? (
+        <p className="tarjeta text-suave mt-2 text-center text-sm">Tu cliente aún no anota comidas.</p>
+      ) : (
+        <div className="mt-2 flex flex-col gap-2">
+          {visibles.map((c, i) => (
+            <div key={c.uid}>
+              {(i === 0 || visibles[i - 1].fecha !== c.fecha) && <p className="text-suave mt-2 mb-1.5 text-xs font-semibold tracking-wider uppercase">{fechaRelativa(c.fecha)}</p>}
+              <div className="tarjeta flex items-start gap-3 !p-2.5">
+                {urls[c.uid] ? (
+                  <a href={urls[c.uid]} target="_blank" rel="noreferrer" className="shrink-0">
+                    <img src={urls[c.uid]} alt={`Foto de ${c.tipo.toLowerCase()}`} className="size-20 rounded-xl object-cover" />
+                  </a>
+                ) : (
+                  <span className="bg-campo text-suave grid size-20 shrink-0 place-items-center rounded-xl">
+                    <Icon name={c.path ? 'camara' : 'comida'} size={24} />
+                  </span>
+                )}
+                <div className="min-w-0 flex-1 py-0.5">
+                  <p className="flex items-center justify-between gap-2">
+                    <span className="text-dorado text-sm font-semibold">{c.tipo}</span>
+                    <span className="text-suave text-xs tabular-nums">{c.hora}</span>
+                  </p>
+                  {c.nota ? <p className="mt-0.5 text-sm whitespace-pre-line">{c.nota}</p> : <p className="text-suave mt-0.5 text-xs italic">Sin comentario</p>}
+                </div>
+              </div>
+            </div>
+          ))}
+          {d.comidas.length > cuantas && (
+            <button onClick={() => setCuantas((n) => n + 20)} className="btn-sec w-full">
+              Ver más
+            </button>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

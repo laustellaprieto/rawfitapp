@@ -110,6 +110,22 @@ export interface Logro extends Sincronizable {
   fecha: string;
 }
 
+export const TIPOS_COMIDA = ['Desayuno', 'Almuerzo', 'Cena', 'Snack', 'Otro'] as const;
+export type TipoComida = (typeof TIPOS_COMIDA)[number];
+
+/** Entrada del diario de comidas: foto opcional + comentario. */
+export interface Comida extends Sincronizable {
+  id?: number;
+  fecha: string; // YYYY-MM-DD
+  hora: string; // HH:MM
+  tipo: TipoComida;
+  nota?: string;
+  imagen?: Blob;
+  fotoV?: number; // cambia cada vez que se cambia la foto (para saber si hay que volver a bajarla)
+  path?: string; // ruta de la foto en la nube (la pone la sincronización)
+  subidaV?: number; // fotoV que ya está en la nube (solo local)
+}
+
 /** Ejercicio de una rutina asignada por la coach (con valores objetivo). */
 export interface EjercicioRutina {
   ejercicioId: string;
@@ -165,6 +181,7 @@ export const db = new Dexie('rawfit-kit') as Dexie & {
   logros: EntityTable<Logro, 'id'>;
   rutinas: EntityTable<Rutina, 'id'>;
   nutricion: EntityTable<Nutricion, 'id'>;
+  comidas: EntityTable<Comida, 'id'>;
   borrados: EntityTable<Borrado, 'clave'>;
   meta: Dexie.Table<{ clave: string; valor: unknown }, string>;
 };
@@ -222,6 +239,11 @@ db.version(2)
       f.uid ??= nuevo();
     });
   });
+
+// v3: diario de comidas.
+db.version(3).stores({
+  comidas: '++id, fecha, &uid',
+});
 
 export const perfilInicial = (): Perfil => ({
   id: 'main',
