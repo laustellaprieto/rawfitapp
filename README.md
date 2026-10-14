@@ -59,7 +59,7 @@ El texto del aviso de privacidad está en `src/data/privacidad.ts`: revísalo y 
 
 La app está en **Cloudflare** (gratis y permite uso comercial): **https://rawfitapp.laustellaprieto-m.workers.dev**. Cada cambio en la rama `main` se publica solo. La configuración está en `wrangler.jsonc` y `public/_headers`.
 
-La dirección anterior en Vercel muestra un aviso de mudanza (`src/components/AvisoMudanza.tsx`) con los pasos para llevar los datos: exportar la copia, abrir la app nueva e importarla. Las personas con cuenta solo inician sesión. Si cambias de dirección otra vez, actualiza `URL_APP` en ese archivo y el *Site URL* / *Redirect URLs* de Supabase.
+Si algún día cambias de dirección, actualiza el *Site URL* y los *Redirect URLs* de Supabase. Ojo: los datos de quien usa la app **sin cuenta** se guardan por dirección, así que en una mudanza tendrían que exportar su copia en la app vieja e importarla en la nueva (opción “Importar copia” al empezar o en Ajustes).
 
 ## Cómo publicarla gratis y compartirla en tu bio de Instagram (referencia)
 
