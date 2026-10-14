@@ -119,6 +119,7 @@ export interface EjercicioRutina {
   reps?: string; // texto libre: "8", "8–10", "AMRAP"…
   peso?: number; // kg objetivo
   rir?: number;
+  descanso?: number; // segundos de descanso entre series
   nota?: string;
 }
 
@@ -130,6 +131,10 @@ export interface Rutina extends Sincronizable {
   orden: number;
   ejercicios: EjercicioRutina[];
   notas?: string;
+  // Bloque o semana del programa (opcional). Sin fechas = siempre vigente.
+  bloque?: string; // ej. "Semana 1" o "Fase de fuerza"
+  inicio?: string; // YYYY-MM-DD
+  fin?: string; // YYYY-MM-DD (incluido)
 }
 
 /** Guía de alimentación en PDF que sube la coach (la tabla se llama nutricion por compatibilidad). */

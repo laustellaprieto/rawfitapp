@@ -1,21 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EMOJIS_HABITO } from '../../data/habitos';
 import { calcularCalorias, kcal, macrosDelPerfil, textoMeta } from '../../lib/calorias';
-import { borrarPdf, cargarCliente, guardarParaCliente, limpiar, subirPdf, urlFirmada, type DatosCliente } from '../../lib/coach';
+import { aBase, borrarPdf, cargarCliente, guardarParaCliente, guardarPlantilla, limpiar, subirPdf, urlFirmada, type DatosCliente, type Plantilla } from '../../lib/coach';
 import type { Habito, Rutina } from '../../lib/db';
 import { diaDelReto, fechaCorta, fechaRelativa, hoyISO, sumarDias, toISO } from '../../lib/fechas';
 import { num } from '../../lib/format';
 import { indexarRegistros, porcentajeDia, rachaActual } from '../../lib/habitos';
 import { formatoVolumen, volumenSesion } from '../../lib/entreno';
 import { analizar, resumenCampo } from '../../lib/progreso';
-import { textoObjetivo } from '../../lib/rutinas';
+import { agruparBloques, finDe, semanasDe, textoFechas, textoObjetivo, type Bloque } from '../../lib/rutinas';
 import { traducirError, type PerfilNube } from '../../lib/nube';
 import { GraficaLinea } from '../../components/Graficas';
 import { Icon } from '../../components/Icon';
 import { Sheet } from '../../components/Sheet';
 import { Delta, Segmentos, Stat } from '../../components/ui';
+import { CamposBloque, FormAsignar, proximoLunes, type ValoresBloque } from './Asignar';
 import { EditorRutina } from './EditorRutina';
-import { Avatar, nombreDe } from './PanelCoach';
+import { ElegirPlantilla } from './Plantillas';
+import { Avatar, nombreDe } from './comun';
 
 type Pestana = 'progreso' | 'entreno' | 'nutricion' | 'habitos';
 
@@ -75,7 +77,7 @@ export default function ClienteDetalle({ cliente, onVolver }: { cliente: PerfilN
       {error && <p className="bg-sube/10 text-sube mb-4 rounded-xl px-3 py-2 text-sm">{error}</p>}
       {!d && !error && <p className="text-suave py-10 text-center text-sm">Cargando…</p>}
       {d && pestana === 'progreso' && <Progreso d={d} cliente={cliente} />}
-      {d && pestana === 'entreno' && <Entreno d={d} guardar={guardar} />}
+      {d && pestana === 'entreno' && <Entreno d={d} cliente={cliente} guardar={guardar} recargar={cargar} />}
       {d && pestana === 'nutricion' && <GuiaAlimentacion d={d} cliente={cliente} recargar={cargar} />}
       {d && pestana === 'habitos' && <Habitos d={d} guardar={guardar} />}
     </>
@@ -230,38 +232,106 @@ function Fotos({ d, cliente }: { d: DatosCliente; cliente: PerfilNube }) {
 
 /* ───────────── Entreno ───────────── */
 
-function Entreno({ d, guardar }: { d: DatosCliente; guardar: (t: 'rutinas', uid: string, data: object | null) => Promise<void> }) {
+const ESTADO_BLOQUE = {
+  vigente: { texto: 'En curso', clase: 'bg-baja/15 text-baja' },
+  proximo: { texto: 'Próximo', clase: 'bg-dorado/15 text-dorado' },
+  terminado: { texto: 'Terminado', clase: 'bg-campo text-suave' },
+} as const;
+
+/** "Semana 1" → "Semana 2"; si no termina en número, agrega " (2)". */
+const siguienteNombre = (n?: string) => {
+  if (!n) return '';
+  const m = n.match(/^(.*?)(\d+)\s*$/);
+  return m ? `${m[1]}${Number(m[2]) + 1}` : `${n} (2)`;
+};
+
+type Accion =
+  | { tipo: 'menu-rutina'; r: Rutina }
+  | { tipo: 'menu-bloque'; b: Bloque }
+  | { tipo: 'copiar'; rutinas: Rutina[]; b?: Bloque }
+  | { tipo: 'duplicar'; b: Bloque }
+  | { tipo: 'plantilla'; rutinas: Rutina[]; nombre: string }
+  | { tipo: 'editar-bloque'; b: Bloque }
+  | { tipo: 'desde-plantilla'; p?: Plantilla };
+
+function Entreno({ d, cliente, guardar, recargar }: { d: DatosCliente; cliente: PerfilNube; guardar: (t: 'rutinas', uid: string, data: object | null) => Promise<void>; recargar: () => Promise<void> }) {
   const [editando, setEditando] = useState<Rutina | null>(null);
-  const nueva = () => setEditando({ uid: crypto.randomUUID(), nombre: '', orden: d.rutinas.length, ejercicios: [] });
+  const [accion, setAccion] = useState<Accion | null>(null);
+  const [aviso, setAviso] = useState('');
+  const bloques = useMemo(() => agruparBloques(d.rutinas), [d.rutinas]);
+  const sugerencias = bloques.filter((b) => b.nombre || b.inicio).map((b) => ({ nombre: b.nombre, inicio: b.inicio, fin: b.fin }));
+  const conBloques = bloques.some((b) => b.nombre || b.inicio || b.fin);
+  const nueva = (b?: Bloque) => setEditando({ uid: crypto.randomUUID(), nombre: '', orden: Date.now(), ejercicios: [], bloque: b?.nombre, inicio: b?.inicio, fin: b?.fin });
+  const listo = (texto: string) => {
+    setAccion(null);
+    setAviso(texto);
+    recargar();
+  };
+  const cerrar = () => setAccion(null);
+
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-suave text-sm">Las rutinas aparecen en la app de tu cliente en Entreno (y en Hoy si les pones día).</p>
-        <button className="btn-oro shrink-0 !py-2.5" onClick={nueva}>
+      <p className="text-suave text-sm">Las rutinas aparecen en la app de tu cliente en Entreno (y en Hoy si les pones día). Con un bloque y fechas, solo las ve mientras el bloque está en curso.</p>
+      <div className="flex gap-2">
+        <button className="btn-sec flex-1 !py-2.5 text-sm" onClick={() => setAccion({ tipo: 'desde-plantilla' })}>
+          <Icon name="copiar" size={17} /> Desde plantilla
+        </button>
+        <button className="btn-oro flex-1 !py-2.5 text-sm" onClick={() => nueva()}>
           <Icon name="mas" size={18} strokeWidth={2.4} /> Rutina
         </button>
       </div>
+      {aviso && (
+        <p role="status" className="animate-entrada bg-baja/10 text-baja rounded-xl px-3 py-2 text-sm">
+          {aviso}
+        </p>
+      )}
       {d.rutinas.length === 0 && <p className="tarjeta text-suave text-center text-sm">Aún no hay rutinas para este cliente.</p>}
-      {d.rutinas.map((r) => (
-        <button key={r.uid} onClick={() => setEditando(r)} className="tarjeta text-left transition hover:!border-white/10">
-          <div className="flex items-center justify-between gap-2">
-            <p className="font-semibold">{r.nombre}</p>
-            <span className="text-suave text-xs">{r.dia ?? 'Cualquier día'}</span>
-          </div>
-          <ul className="mt-2 flex flex-col gap-0.5 text-xs">
-            {r.ejercicios.map((e, i) => (
-              <li key={i}>
-                {e.nombre} <span className="text-champagne">{textoObjetivo(e)}</span>
-              </li>
-            ))}
-          </ul>
-        </button>
+
+      {bloques.map((b) => (
+        <section key={b.clave} className="flex flex-col gap-2">
+          {conBloques && (
+            <div className={`mt-2 flex items-center gap-2 ${b.estado === 'terminado' ? 'opacity-60' : ''}`}>
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-2">
+                  <span className="titulo text-champagne truncate text-xl leading-none">{b.nombre || (b.inicio || b.fin ? 'Bloque' : 'Sin bloque')}</span>
+                  {(b.inicio || b.fin) && <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${ESTADO_BLOQUE[b.estado].clase}`}>{ESTADO_BLOQUE[b.estado].texto}</span>}
+                </p>
+                <p className="text-suave text-xs">{textoFechas(b) || 'Siempre visible'}</p>
+              </div>
+              <button onClick={() => setAccion({ tipo: 'menu-bloque', b })} className="text-suave hover:text-texto bg-campo grid size-9 shrink-0 place-items-center rounded-full" aria-label={`Opciones del bloque ${b.nombre ?? ''}`}>
+                <Icon name="puntos" size={20} strokeWidth={3} />
+              </button>
+            </div>
+          )}
+          {b.rutinas.map((r) => (
+            <div key={r.uid} className={`tarjeta flex items-start gap-2 !p-3 ${b.estado === 'terminado' ? 'opacity-60' : ''}`}>
+              <button onClick={() => setEditando(r)} className="min-w-0 flex-1 text-left">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold">{r.nombre}</p>
+                  <span className="text-suave text-xs">{r.dia ?? 'Cualquier día'}</span>
+                </div>
+                <ul className="mt-2 flex flex-col gap-0.5 text-xs">
+                  {r.ejercicios.map((e, i) => (
+                    <li key={i}>
+                      {e.nombre} <span className="text-champagne">{textoObjetivo(e)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </button>
+              <button onClick={() => setAccion({ tipo: 'menu-rutina', r })} className="text-suave hover:text-texto -mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-full" aria-label={`Opciones de ${r.nombre}`}>
+                <Icon name="puntos" size={20} strokeWidth={3} />
+              </button>
+            </div>
+          ))}
+        </section>
       ))}
+
       <Sheet formulario abierto={!!editando} onCerrar={() => setEditando(null)} titulo={editando?.nombre ? 'Editar rutina' : 'Nueva rutina'}>
         {editando && (
           <EditorRutina
             key={editando.uid}
             rutina={editando}
+            bloques={sugerencias}
             onCancelar={() => setEditando(null)}
             onGuardar={async (r) => {
               await guardar('rutinas', editando.uid!, limpiar(r));
@@ -278,7 +348,174 @@ function Entreno({ d, guardar }: { d: DatosCliente; guardar: (t: 'rutinas', uid:
           />
         )}
       </Sheet>
+
+      {/* Menús de opciones */}
+      <Sheet abierto={accion?.tipo === 'menu-rutina' || accion?.tipo === 'menu-bloque'} onCerrar={cerrar} titulo="Opciones">
+        {accion?.tipo === 'menu-rutina' && (
+          <Menu
+            opciones={[
+              { icono: 'copiar', texto: 'Copiar a otros clientes', fn: () => setAccion({ tipo: 'copiar', rutinas: [accion.r] }) },
+              { icono: 'documento', texto: 'Guardar como plantilla', fn: () => setAccion({ tipo: 'plantilla', rutinas: [accion.r], nombre: accion.r.nombre }) },
+              { icono: 'editar', texto: 'Editar', fn: () => (setAccion(null), setEditando(accion.r)) },
+            ]}
+          />
+        )}
+        {accion?.tipo === 'menu-bloque' && (
+          <Menu
+            opciones={[
+              { icono: 'calendario', texto: 'Duplicar como bloque siguiente', detalle: 'Para planificar la progresión: copia estas rutinas con las fechas que elijas.', fn: () => setAccion({ tipo: 'duplicar', b: accion.b }) },
+              { icono: 'editar', texto: 'Cambiar nombre o fechas', fn: () => setAccion({ tipo: 'editar-bloque', b: accion.b }) },
+              { icono: 'copiar', texto: 'Copiar a otros clientes', fn: () => setAccion({ tipo: 'copiar', rutinas: accion.b.rutinas, b: accion.b }) },
+              { icono: 'documento', texto: 'Guardar como plantilla', fn: () => setAccion({ tipo: 'plantilla', rutinas: accion.b.rutinas, nombre: accion.b.nombre ?? '' }) },
+              { icono: 'mas', texto: 'Agregar rutina a este bloque', fn: () => (setAccion(null), nueva(accion.b)) },
+            ]}
+          />
+        )}
+      </Sheet>
+
+      {/* Formularios */}
+      <Sheet formulario abierto={accion?.tipo === 'copiar'} onCerrar={cerrar} titulo="Copiar a otros clientes">
+        {accion?.tipo === 'copiar' && (
+          <FormAsignar
+            rutinas={accion.rutinas.map(aBase)}
+            excluir={cliente.id}
+            textoBoton="Copiar"
+            iniciales={{ bloque: accion.b?.nombre ?? '', inicio: accion.b?.inicio ?? '', semanas: semanasDe(accion.b?.inicio, accion.b?.fin) }}
+            onCancelar={cerrar}
+            onListo={(n) => listo(`Listo: se copió a ${n} ${n === 1 ? 'cliente' : 'clientes'}.`)}
+          />
+        )}
+      </Sheet>
+      <Sheet formulario abierto={accion?.tipo === 'duplicar'} onCerrar={cerrar} titulo="Duplicar bloque">
+        {accion?.tipo === 'duplicar' && (
+          <FormAsignar
+            rutinas={accion.b.rutinas.map(aBase)}
+            clienteFijo={cliente.id}
+            textoBoton="Crear bloque"
+            iniciales={{
+              bloque: siguienteNombre(accion.b.nombre),
+              inicio: accion.b.fin ? sumarDias(accion.b.fin, 1) : proximoLunes(),
+              semanas: semanasDe(accion.b.inicio, accion.b.fin) || 1,
+            }}
+            onCancelar={cerrar}
+            onListo={() => listo('Listo: se creó el bloque. Ajusta pesos o repeticiones tocando cada rutina.')}
+          />
+        )}
+      </Sheet>
+      <Sheet formulario abierto={accion?.tipo === 'editar-bloque'} onCerrar={cerrar} titulo="Editar bloque">
+        {accion?.tipo === 'editar-bloque' && <FormEditarBloque b={accion.b} cliente={cliente.id} onCancelar={cerrar} onListo={() => listo('Listo: bloque actualizado.')} />}
+      </Sheet>
+      <Sheet formulario abierto={accion?.tipo === 'plantilla'} onCerrar={cerrar} titulo="Guardar como plantilla">
+        {accion?.tipo === 'plantilla' && <FormNuevaPlantilla rutinas={accion.rutinas} nombre={accion.nombre} onCancelar={cerrar} onListo={(n) => listo(`Listo: “${n}” está en Mis clientes → Plantillas.`)} />}
+      </Sheet>
+      <Sheet formulario={!!(accion?.tipo === 'desde-plantilla' && accion.p)} abierto={accion?.tipo === 'desde-plantilla'} onCerrar={cerrar} titulo={accion?.tipo === 'desde-plantilla' && accion.p ? accion.p.nombre : 'Elige una plantilla'}>
+        {accion?.tipo === 'desde-plantilla' &&
+          (accion.p ? (
+            <FormAsignar
+              rutinas={accion.p.rutinas}
+              clienteFijo={cliente.id}
+              iniciales={{ bloque: accion.p.nombre, inicio: proximoLunes(), semanas: 1 }}
+              onCancelar={cerrar}
+              onListo={() => listo('Listo: se agregaron las rutinas de la plantilla.')}
+            />
+          ) : (
+            <ElegirPlantilla onElegir={(p) => setAccion({ tipo: 'desde-plantilla', p })} />
+          ))}
+      </Sheet>
     </div>
+  );
+}
+
+function Menu({ opciones }: { opciones: { icono: 'copiar' | 'documento' | 'editar' | 'calendario' | 'mas'; texto: string; detalle?: string; fn: () => void }[] }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      {opciones.map((o) => (
+        <button key={o.texto} onClick={o.fn} className="bg-campo/50 hover:bg-campo flex items-center gap-3 rounded-2xl px-3 py-3 text-left transition">
+          <span className="bg-dorado/15 text-dorado grid size-9 shrink-0 place-items-center rounded-xl">
+            <Icon name={o.icono} size={18} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">{o.texto}</span>
+            {o.detalle && <span className="text-suave block text-xs">{o.detalle}</span>}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Cambia nombre y fechas de todas las rutinas de un bloque. */
+function FormEditarBloque({ b, cliente, onCancelar, onListo }: { b: Bloque; cliente: string; onCancelar: () => void; onListo: () => void }) {
+  const [v, setV] = useState<ValoresBloque>({ bloque: b.nombre ?? '', inicio: b.inicio ?? '', semanas: semanasDe(b.inicio, b.fin) });
+  const [error, setError] = useState('');
+  const [guardando, setGuardando] = useState(false);
+  const guardarBloque = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setGuardando(true);
+    setError('');
+    try {
+      const cambios = { bloque: v.bloque.trim() || undefined, inicio: v.inicio || undefined, fin: finDe(v.inicio || undefined, v.semanas) };
+      for (const r of b.rutinas) await guardarParaCliente(cliente, 'rutinas', r.uid!, limpiar({ ...r, ...cambios }));
+      onListo();
+    } catch (err) {
+      setError(traducirError(err));
+    } finally {
+      setGuardando(false);
+    }
+  };
+  return (
+    <form onSubmit={guardarBloque} className="flex flex-col gap-4">
+      <CamposBloque v={v} onChange={setV} id="eb" />
+      <p className="text-suave text-xs">Se aplica a {b.rutinas.length === 1 ? 'la rutina' : `las ${b.rutinas.length} rutinas`} de este bloque.</p>
+      {error && <p className="bg-sube/10 text-sube rounded-xl px-3 py-2 text-sm">{error}</p>}
+      <div className="flex gap-2">
+        <button type="button" onClick={onCancelar} className="btn-sec">
+          Cancelar
+        </button>
+        <button className="btn-oro flex-1" disabled={guardando}>
+          {guardando ? 'Guardando…' : 'Guardar'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function FormNuevaPlantilla({ rutinas, nombre: inicial, onCancelar, onListo }: { rutinas: Rutina[]; nombre: string; onCancelar: () => void; onListo: (nombre: string) => void }) {
+  const [nombre, setNombre] = useState(inicial);
+  const [error, setError] = useState('');
+  const [guardando, setGuardando] = useState(false);
+  const guardarP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setGuardando(true);
+    setError('');
+    try {
+      await guardarPlantilla({ uid: crypto.randomUUID(), nombre: nombre.trim(), rutinas: rutinas.map(aBase), creada: new Date().toISOString() });
+      onListo(nombre.trim());
+    } catch (err) {
+      setError(traducirError(err));
+    } finally {
+      setGuardando(false);
+    }
+  };
+  return (
+    <form onSubmit={guardarP} className="flex flex-col gap-4">
+      <div>
+        <label className="etiqueta" htmlFor="np-nombre">Nombre de la plantilla</label>
+        <input id="np-nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} className="campo" placeholder="Ej.: Fuerza 3 días – principiante" maxLength={50} required autoFocus />
+      </div>
+      <p className="text-suave text-xs">
+        Incluye {rutinas.length === 1 ? 'la rutina' : `${rutinas.length} rutinas`} ({rutinas.map((r) => r.nombre).join(', ')}) con sus días y ejercicios. No guarda fechas ni datos de tu cliente.
+      </p>
+      {error && <p className="bg-sube/10 text-sube rounded-xl px-3 py-2 text-sm">{error}</p>}
+      <div className="flex gap-2">
+        <button type="button" onClick={onCancelar} className="btn-sec">
+          Cancelar
+        </button>
+        <button className="btn-oro flex-1" disabled={guardando || !nombre.trim()}>
+          {guardando ? 'Guardando…' : 'Guardar plantilla'}
+        </button>
+      </div>
+    </form>
   );
 }
 

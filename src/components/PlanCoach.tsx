@@ -1,27 +1,46 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { db, type Rutina, type Sesion } from '../lib/db';
-import { fechaRelativa, toISO } from '../lib/fechas';
-import { abrirPdf, diaDeHoy, rutinasOrdenadas, sesionDesdeRutina, textoObjetivo } from '../lib/rutinas';
+import { fechaCorta, fechaRelativa, toISO } from '../lib/fechas';
+import { abrirPdf, diaDeHoy, estadoRutina, planVigente, sesionDesdeRutina, textoFechas, textoObjetivo } from '../lib/rutinas';
 import { Icon } from './Icon';
 
 /** Rutinas que asignó la coach, con botón para empezar la sesión. */
 export function TuPlanEntreno({ onEmpezar }: { onEmpezar: (s: Sesion) => void }) {
-  const rutinas = useLiveQuery(rutinasOrdenadas, []) ?? [];
+  const plan = useLiveQuery(planVigente, []);
   const [abierta, setAbierta] = useState<string>();
-  if (!rutinas.length) return null;
+  if (!plan || (!plan.vigentes.length && !plan.proximo)) return null;
+  const { vigentes: rutinas, proximo } = plan;
   const hoy = diaDeHoy();
+  // Bloques en curso (ej. "Semana 2 · Del 13 oct al 19 oct").
+  const bloques = [...new Map(rutinas.filter((r) => r.bloque || r.inicio || r.fin).map((r) => [`${r.bloque}|${r.inicio}|${r.fin}`, r])).values()];
   return (
     <section className="tarjeta animate-entrada !border-dorado/25 mb-4">
       <p className="text-dorado flex items-center gap-1.5 text-[11px] font-semibold tracking-wider uppercase">
         <Icon name="trofeo" size={14} /> Tu plan de entrenamiento
       </p>
-      <p className="text-suave mt-0.5 mb-3 text-xs">Lo preparó tu coach. Toca “Empezar” y anota tus series sobre el objetivo.</p>
+      {bloques.map((b) => (
+        <p key={`${b.bloque}|${b.inicio}|${b.fin}`} className="text-champagne mt-1 text-sm font-semibold">
+          {b.bloque || 'Bloque actual'}
+          {textoFechas(b) && <span className="text-suave font-normal"> · {textoFechas(b)}</span>}
+        </p>
+      ))}
+      <p className="text-suave mt-0.5 mb-3 text-xs">
+        {rutinas.length ? 'Lo preparó tu coach. Toca “Empezar” y anota tus series sobre el objetivo.' : 'Tu coach ya te preparó el siguiente bloque.'}
+      </p>
       <div className="flex flex-col gap-2">
         {rutinas.map((r) => (
           <TarjetaRutina key={r.uid} r={r} esHoy={r.dia === hoy} abierta={abierta === r.uid} onAlternar={() => setAbierta(abierta === r.uid ? undefined : r.uid)} onEmpezar={() => onEmpezar(sesionDesdeRutina(r))} />
         ))}
       </div>
+      {proximo && (
+        <p className="bg-campo/50 text-suave mt-2 flex items-center gap-2 rounded-xl px-3 py-2 text-xs">
+          <Icon name="calendario" size={16} className="text-dorado shrink-0" />
+          <span>
+            Próximo: <b className="text-texto">{proximo.nombre || 'nuevo bloque'}</b>, empieza el {fechaCorta(proximo.inicio)}.
+          </span>
+        </p>
+      )}
     </section>
   );
 }
@@ -62,7 +81,7 @@ function TarjetaRutina({ r, esHoy, abierta, onAlternar, onEmpezar }: { r: Rutina
 
 /** En Hoy: la rutina que toca hoy (si la coach le puso día). */
 export function EntrenoDeHoy({ onEmpezar }: { onEmpezar: (r: Rutina) => void }) {
-  const rutina = useLiveQuery(() => db.rutinas.filter((r) => r.dia === diaDeHoy()).first(), []);
+  const rutina = useLiveQuery(() => db.rutinas.orderBy('orden').filter((r) => r.dia === diaDeHoy() && estadoRutina(r) === 'vigente').first(), []);
   if (!rutina) return null;
   return (
     <button onClick={() => onEmpezar(rutina)} className="tarjeta animate-entrada !border-dorado/30 mb-4 flex w-full items-center gap-3 text-left">

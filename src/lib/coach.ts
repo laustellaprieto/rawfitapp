@@ -96,3 +96,62 @@ export async function urlFirmada(bucket: 'fotos' | 'nutricion', path: string) {
   if (error) throw new Error(traducirError(error));
   return data.signedUrl;
 }
+
+/* ───────────── Plantillas y copias de rutinas ───────────── */
+
+/** Rutina sin datos del cliente ni del bloque (lo que se guarda en una plantilla). */
+export type RutinaBase = Omit<Rutina, 'id' | 'uid' | '_p' | 'bloque' | 'inicio' | 'fin' | 'orden'>;
+
+/** Plantilla de la coach: una rutina o una semana completa. Se guarda en la nube como fila de la coach (tabla 'plantillas'). */
+export interface Plantilla {
+  uid: string;
+  nombre: string;
+  rutinas: RutinaBase[];
+  creada: string; // ISO
+}
+
+const miId = async () => {
+  const { data } = await sb().auth.getSession();
+  const id = data.session?.user.id;
+  if (!id) throw new Error('Inicia sesión para usar las plantillas.');
+  return id;
+};
+
+/** Quita lo que es propio del cliente (uid, orden, bloque y fechas). */
+export function aBase(r: Rutina): RutinaBase {
+  const { id: _i, uid: _u, _p, bloque: _b, inicio: _in, fin: _f, orden: _o, ...base } = r;
+  void [_i, _u, _p, _b, _in, _f, _o];
+  return JSON.parse(JSON.stringify(base));
+}
+
+export async function listarPlantillas(): Promise<Plantilla[]> {
+  const filas = ok(await sb().from('datos').select('uid, data').eq('user_id', await miId()).eq('tabla', 'plantillas').eq('deleted', false)) as {
+    uid: string;
+    data: Omit<Plantilla, 'uid'>;
+  }[];
+  return filas.map((f) => ({ ...f.data, uid: f.uid })).sort((a, b) => a.nombre.localeCompare(b.nombre));
+}
+
+export async function guardarPlantilla(p: Plantilla) {
+  const { uid, ...data } = p;
+  ok(await sb().from('datos').upsert({ user_id: await miId(), tabla: 'plantillas', uid, data, deleted: false }, { onConflict: 'user_id,tabla,uid' }));
+}
+
+export async function borrarPlantilla(uid: string) {
+  ok(await sb().from('datos').upsert({ user_id: await miId(), tabla: 'plantillas', uid, data: {}, deleted: true }, { onConflict: 'user_id,tabla,uid' }));
+}
+
+/** Crea copias nuevas de las rutinas en cada cliente, opcionalmente dentro de un bloque con fechas. */
+export async function asignarRutinas(clientes: string[], rutinas: RutinaBase[], bloque: { bloque?: string; inicio?: string; fin?: string }) {
+  const base = Date.now();
+  const filas = clientes.flatMap((cliente) =>
+    rutinas.map((r, i) => ({
+      user_id: cliente,
+      tabla: 'rutinas',
+      uid: crypto.randomUUID(),
+      data: limpiar({ ...JSON.parse(JSON.stringify(r)), orden: base + i, ...bloque }),
+      deleted: false,
+    })),
+  );
+  if (filas.length) ok(await sb().from('datos').insert(filas));
+}

@@ -7,7 +7,7 @@ import { num } from '../lib/format';
 import { Icon } from '../components/Icon';
 import { Sheet } from '../components/Sheet';
 import { BotonAgregar, Encabezado } from '../components/ui';
-import { normalizar } from './entreno/Buscador';
+import { coincide } from '../lib/busqueda';
 
 const TODOS = 'Todos';
 const COLOR_NIVEL: Record<string, string> = {
@@ -27,13 +27,12 @@ export default function Ejercicios() {
   const [editando, setEditando] = useState<EjercicioPropio | null>(null);
 
   const filtrados = useMemo(() => {
-    const nq = normalizar(q.trim());
     return banco.filter(
       (e) =>
         (grupo === TODOS || e.grupo === grupo) &&
         (nivel === TODOS || e.nivel === nivel) &&
         (equipo === TODOS || e.equipo === equipo) &&
-        (!nq || normalizar(`${e.nombre} ${e.grupo} ${e.equipo}`).includes(nq)),
+        coincide(e, q),
     );
   }, [banco, q, grupo, nivel, equipo]);
 

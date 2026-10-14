@@ -1,14 +1,11 @@
 import { useMemo, useState } from 'react';
 import { GRUPOS, type EjercicioBanco } from '../../data/ejercicios';
 import { useBanco } from '../../lib/entreno';
+import { buscarEjercicios } from '../../lib/busqueda';
 import { Icon } from '../../components/Icon';
 import { Segmentos } from '../../components/ui';
 
-export const normalizar = (t: string) =>
-  t
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
+export { normalizar } from '../../lib/busqueda';
 
 /** Buscador del banco de ejercicios para agregarlos a una sesión. */
 export function Buscador({ onElegir }: { onElegir: (e: EjercicioBanco) => void }) {
@@ -17,8 +14,7 @@ export function Buscador({ onElegir }: { onElegir: (e: EjercicioBanco) => void }
   const [grupo, setGrupo] = useState<string>('Todos');
 
   const resultados = useMemo(() => {
-    const nq = normalizar(q.trim());
-    return banco.filter((e) => (grupo === 'Todos' || e.grupo === grupo) && (!nq || normalizar(`${e.nombre} ${e.grupo}`).includes(nq)));
+    return buscarEjercicios(banco, q).filter((e) => grupo === 'Todos' || e.grupo === grupo);
   }, [banco, q, grupo]);
 
   return (

@@ -29,12 +29,14 @@ export type Nivel = (typeof NIVELES)[number];
 export interface EjercicioBanco {
   id: string;
   nombre: string;
+  /** Otros nombres con los que se busca (ej. "tumbado" para "acostado"). */
+  alias?: string[];
   grupo: Grupo | string;
   equipo: Equipo | string;
   nivel: Nivel | string;
 }
 
-type Fila = [id: string, nombre: string, equipo: Equipo, nivel: Nivel];
+type Fila = [id: string, nombre: string, equipo: Equipo, nivel: Nivel, alias?: string[]];
 
 const BANCO: Record<Grupo, Fila[]> = {
   'Pierna (cuádriceps)': [
@@ -45,6 +47,7 @@ const BANCO: Record<Grupo, Fila[]> = {
     ['sentadilla-bulgara', 'Sentadilla búlgara', 'Mancuernas', 'Intermedio'],
     ['zancada-adelante', 'Zancada hacia adelante', 'Casa', 'Principiante'],
     ['zancada-caminando', 'Zancadas caminando', 'Mancuernas', 'Intermedio'],
+    ['zancada-atras-mancuernas', 'Zancada hacia atrás con mancuernas', 'Mancuernas', 'Principiante', ['zancada inversa', 'estocada atrás']],
     ['prensa-piernas', 'Prensa de piernas', 'Gimnasio', 'Principiante'],
     ['extension-cuadriceps', 'Extensión de cuádriceps', 'Gimnasio', 'Principiante'],
     ['hack-squat', 'Sentadilla hack', 'Gimnasio', 'Intermedio'],
@@ -56,11 +59,12 @@ const BANCO: Record<Grupo, Fila[]> = {
     ['hip-thrust', 'Hip thrust con barra', 'Gimnasio', 'Intermedio'],
     ['puente-gluteo', 'Puente de glúteo', 'Casa', 'Principiante'],
     ['puente-gluteo-una-pierna', 'Puente de glúteo a una pierna', 'Casa', 'Intermedio'],
+    ['puente-gluteo-banda', 'Puente de glúteo con banda', 'Banda elástica', 'Principiante', ['puente con liga']],
     ['peso-muerto-rumano', 'Peso muerto rumano', 'Mancuernas', 'Intermedio'],
     ['peso-muerto-convencional', 'Peso muerto convencional', 'Gimnasio', 'Avanzado'],
     ['peso-muerto-sumo', 'Peso muerto sumo', 'Gimnasio', 'Intermedio'],
     ['peso-muerto-una-pierna', 'Peso muerto a una pierna', 'Mancuernas', 'Intermedio'],
-    ['curl-femoral-tumbado', 'Curl femoral tumbado', 'Gimnasio', 'Principiante'],
+    ['curl-femoral-tumbado', 'Curl femoral acostado', 'Gimnasio', 'Principiante', ['curl femoral tumbado', 'curl femoral tendido']],
     ['curl-femoral-sentado', 'Curl femoral sentado', 'Gimnasio', 'Principiante'],
     ['patada-gluteo-polea', 'Patada de glúteo en polea', 'Gimnasio', 'Principiante'],
     ['abduccion-maquina', 'Abducción de cadera en máquina', 'Gimnasio', 'Principiante'],
@@ -105,6 +109,7 @@ const BANCO: Record<Grupo, Fila[]> = {
   Hombro: [
     ['press-militar', 'Press militar con barra', 'Gimnasio', 'Intermedio'],
     ['press-hombro-mancuernas', 'Press de hombro con mancuernas', 'Mancuernas', 'Principiante'],
+    ['press-militar-mancuernas-sentado', 'Press militar con mancuernas sentado', 'Mancuernas', 'Principiante', ['press de hombro sentado']],
     ['press-arnold', 'Press Arnold', 'Mancuernas', 'Intermedio'],
     ['elevaciones-laterales', 'Elevaciones laterales', 'Mancuernas', 'Principiante'],
     ['elevaciones-frontales', 'Elevaciones frontales', 'Mancuernas', 'Principiante'],
@@ -174,5 +179,5 @@ const BANCO: Record<Grupo, Fila[]> = {
 };
 
 export const EJERCICIOS: EjercicioBanco[] = (Object.entries(BANCO) as [Grupo, Fila[]][]).flatMap(([grupo, filas]) =>
-  filas.map(([id, nombre, equipo, nivel]) => ({ id, nombre, grupo, equipo, nivel })),
+  filas.map(([id, nombre, equipo, nivel, alias]) => ({ id, nombre, grupo, equipo, nivel, alias })),
 );

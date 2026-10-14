@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import type { EjercicioRutina, Rutina } from '../../lib/db';
 import { numTxt, parseNum } from '../../lib/format';
-import { DIAS_SEMANA } from '../../lib/rutinas';
+import { DIAS_SEMANA, finDe, semanasDe } from '../../lib/rutinas';
 import { Icon } from '../../components/Icon';
 import { Sheet } from '../../components/Sheet';
 import { Buscador } from '../entreno/Buscador';
+import { CamposBloque, type ValoresBloque } from './Asignar';
 
-type EjTxt = Omit<EjercicioRutina, 'series' | 'peso' | 'rir'> & { series: string; peso: string; rir: string };
+type EjTxt = Omit<EjercicioRutina, 'series' | 'peso' | 'rir' | 'descanso'> & { series: string; peso: string; rir: string; descanso: string };
 
 /** Formulario de la coach para crear o editar una rutina de un cliente. */
 export function EditorRutina({
@@ -14,8 +15,13 @@ export function EditorRutina({
   onGuardar,
   onBorrar,
   onCancelar,
+  bloques,
+  textoGuardar = 'Guardar rutina',
 }: {
   rutina: Rutina;
+  /** Bloques que ya tiene el cliente (sin esto no se muestran los campos de bloque, ej. en plantillas). */
+  bloques?: { nombre?: string; inicio?: string; fin?: string }[];
+  textoGuardar?: string;
   onGuardar: (r: Rutina) => Promise<void>;
   onBorrar?: () => Promise<void>;
   onCancelar: () => void;
@@ -23,7 +29,8 @@ export function EditorRutina({
   const [nombre, setNombre] = useState(rutina.nombre);
   const [dia, setDia] = useState(rutina.dia ?? '');
   const [notas, setNotas] = useState(rutina.notas ?? '');
-  const [ejs, setEjs] = useState<EjTxt[]>(rutina.ejercicios.map((e) => ({ ...e, series: numTxt(e.series), peso: numTxt(e.peso), rir: numTxt(e.rir), reps: e.reps ?? '' })));
+  const [ejs, setEjs] = useState<EjTxt[]>(rutina.ejercicios.map((e) => ({ ...e, series: numTxt(e.series), peso: numTxt(e.peso), rir: numTxt(e.rir), descanso: numTxt(e.descanso), reps: e.reps ?? '' })));
+  const [bloque, setBloque] = useState<ValoresBloque>({ bloque: rutina.bloque ?? '', inicio: rutina.inicio ?? '', semanas: semanasDe(rutina.inicio, rutina.fin) });
   const [buscando, setBuscando] = useState(false);
   const [guardando, setGuardando] = useState(false);
 
@@ -44,6 +51,11 @@ export function EditorRutina({
         nombre: nombre.trim(),
         dia: dia || undefined,
         notas: notas.trim() || undefined,
+        ...(bloques && {
+          bloque: bloque.bloque.trim() || undefined,
+          inicio: bloque.inicio || undefined,
+          fin: finDe(bloque.inicio || undefined, bloque.semanas),
+        }),
         ejercicios: ejs.map((x) => ({
           ejercicioId: x.ejercicioId,
           nombre: x.nombre,
@@ -52,6 +64,7 @@ export function EditorRutina({
           reps: x.reps?.trim() || undefined,
           peso: parseNum(x.peso),
           rir: parseNum(x.rir),
+          descanso: parseNum(x.descanso) || undefined,
           nota: x.nota?.trim() || undefined,
         })),
       });
@@ -102,21 +115,31 @@ export function EditorRutina({
               <div className="grid grid-cols-4 gap-1.5">
                 {(
                   [
-                    ['series', 'Series', 'numeric', '4'],
-                    ['reps', 'Reps', 'text', '8–10'],
+                    ['series', 'Series', 'numeric', 'ej. 3'],
+                    ['reps', 'Reps', 'text', 'ej. 10'],
                     ['peso', 'Kg', 'decimal', '—'],
-                    ['rir', 'RIR', 'numeric', '2'],
+                    ['rir', 'RIR', 'numeric', 'ej. 2'],
                   ] as const
                 ).map(([k, t, modo, ph]) => (
                   <label key={k} className="block">
                     <span className="text-suave mb-1 block text-center text-[10px] font-semibold uppercase">{t}</span>
-                    <input value={e[k] ?? ''} onChange={(ev) => cambiar(i, k, ev.target.value)} inputMode={modo} placeholder={ph} className="campo !rounded-lg !bg-black/25 !px-1 !py-2 text-center" />
+                    <input value={e[k] ?? ''} onChange={(ev) => cambiar(i, k, ev.target.value)} inputMode={modo} placeholder={ph} aria-label={`${t} de ${e.nombre}`} className="campo !rounded-lg !bg-black/25 !px-1 !py-2 text-center placeholder:text-[#5c5c5c] placeholder:italic" />
                   </label>
                 ))}
               </div>
-              <input value={e.nota ?? ''} onChange={(ev) => cambiar(i, 'nota', ev.target.value)} className="campo mt-1.5 !bg-black/25 !py-2 text-sm" placeholder="Indicación (opcional): tempo, descanso, técnica…" />
+              <div className="mt-1.5 grid grid-cols-[6.5rem_1fr] gap-1.5">
+                <label className="block">
+                  <span className="text-suave mb-1 block text-center text-[10px] font-semibold uppercase">Descanso (seg)</span>
+                  <input value={e.descanso} onChange={(ev) => cambiar(i, 'descanso', ev.target.value.replace(/\D/g, ''))} inputMode="numeric" placeholder="ej. 90" aria-label={`Descanso en segundos de ${e.nombre}`} className="campo !rounded-lg !bg-black/25 !px-1 !py-2 text-center placeholder:text-[#5c5c5c] placeholder:italic" />
+                </label>
+                <label className="block">
+                  <span className="text-suave mb-1 block text-[10px] font-semibold uppercase">Indicación</span>
+                  <input value={e.nota ?? ''} onChange={(ev) => cambiar(i, 'nota', ev.target.value)} className="campo !rounded-lg !bg-black/25 !py-2 text-sm" placeholder="Opcional: tempo, técnica…" aria-label={`Indicación para ${e.nombre}`} />
+                </label>
+              </div>
             </div>
           ))}
+          {ejs.length > 0 && <p className="text-suave px-1 text-xs">Lo que ves en gris cursiva es solo un ejemplo: los campos vacíos no se guardan ni se le muestran a tu cliente.</p>}
           <button type="button" onClick={() => setBuscando(true)} className="btn-sec w-full border border-dashed border-white/10">
             <Icon name="buscar" size={18} /> Agregar ejercicio
           </button>
@@ -126,6 +149,8 @@ export function EditorRutina({
           <label className="etiqueta" htmlFor="r-notas">Notas para tu cliente</label>
           <textarea id="r-notas" value={notas} onChange={(e) => setNotas(e.target.value)} className="campo min-h-16 resize-none" placeholder="Calentamiento, descansos, enfoque de la semana…" />
         </div>
+
+        {bloques && <CamposBloque v={bloque} onChange={setBloque} id="r" sugerencias={bloques} />}
 
         <div className="flex gap-2">
           {onBorrar && (
@@ -137,7 +162,7 @@ export function EditorRutina({
             Cancelar
           </button>
           <button className="btn-oro flex-1" disabled={guardando || !nombre.trim() || !ejs.length}>
-            {guardando ? 'Guardando…' : 'Guardar rutina'}
+            {guardando ? 'Guardando…' : textoGuardar}
           </button>
         </div>
       </form>
@@ -145,7 +170,7 @@ export function EditorRutina({
       <Sheet abierto={buscando} onCerrar={() => setBuscando(false)} titulo="Agregar ejercicio">
         <Buscador
           onElegir={(e) => {
-            setEjs((x) => [...x, { ejercicioId: e.id, nombre: e.nombre, grupo: e.grupo, series: '3', reps: '10', peso: '', rir: '2' }]);
+            setEjs((x) => [...x, { ejercicioId: e.id, nombre: e.nombre, grupo: e.grupo, series: '', reps: '', peso: '', rir: '', descanso: '' }]);
             setBuscando(false);
           }}
         />

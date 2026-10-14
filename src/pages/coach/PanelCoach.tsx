@@ -2,17 +2,18 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { listarPerfiles, responder } from '../../lib/coach';
 import { fechaRelativa, toISO } from '../../lib/fechas';
 import { traducirError, type PerfilNube } from '../../lib/nube';
-import { normalizar } from '../entreno/Buscador';
+import { normalizar } from '../../lib/busqueda';
 import { Icon } from '../../components/Icon';
 import { Encabezado, Segmentos, Vacio } from '../../components/ui';
 import ClienteDetalle from './ClienteDetalle';
+import { Avatar, nombreDe } from './comun';
+import { Plantillas } from './Plantillas';
 
-const nombreDe = (p: PerfilNube) => p.nombre || p.email.split('@')[0];
 
 export default function PanelCoach() {
   const [perfiles, setPerfiles] = useState<PerfilNube[]>();
   const [error, setError] = useState('');
-  const [vista, setVista] = useState<'clientes' | 'solicitudes'>('clientes');
+  const [vista, setVista] = useState<'clientes' | 'solicitudes' | 'plantillas'>('clientes');
   const [q, setQ] = useState('');
   const [abierto, setAbierto] = useState<PerfilNube | null>(null);
 
@@ -63,6 +64,7 @@ export default function PanelCoach() {
           opciones={[
             { valor: 'clientes' as const, texto: `Clientes (${clientes.length})` },
             { valor: 'solicitudes' as const, texto: `Solicitudes${pendientes.length ? ` (${pendientes.length})` : ''}` },
+            { valor: 'plantillas' as const, texto: 'Plantillas' },
           ]}
           valor={vista}
           onChange={setVista}
@@ -72,7 +74,9 @@ export default function PanelCoach() {
         </button>
       </div>
 
-      {perfiles === undefined && !error && <p className="text-suave py-10 text-center text-sm">Cargando…</p>}
+      {perfiles === undefined && !error && vista !== 'plantillas' && <p className="text-suave py-10 text-center text-sm">Cargando…</p>}
+
+      {vista === 'plantillas' && <Plantillas />}
 
       {perfiles && vista === 'solicitudes' && (
         pendientes.length === 0 ? (
@@ -133,9 +137,3 @@ export default function PanelCoach() {
     </>
   );
 }
-
-export function Avatar({ p, tam = 'size-10' }: { p: PerfilNube; tam?: string }) {
-  return <span className={`bg-dorado/15 text-dorado titulo grid ${tam} shrink-0 place-items-center rounded-full text-lg`}>{nombreDe(p).slice(0, 1).toUpperCase()}</span>;
-}
-
-export { nombreDe };
