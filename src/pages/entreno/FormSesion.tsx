@@ -170,6 +170,9 @@ export function FormSesion({ sesion, historial, onCerrar }: { sesion: Sesion; hi
               <Icon name="basura" size={18} />
             </button>
           )}
+          <button type="button" onClick={onCerrar} className="btn-sec">
+            Cancelar
+          </button>
           <button className="btn-oro flex-1" disabled={!fecha || ejercicios.length === 0}>
             Guardar sesión
           </button>

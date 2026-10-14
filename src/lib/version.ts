@@ -48,14 +48,26 @@ const CLAVE = 'rawfit-errores';
 export interface ErrorGuardado {
   fecha: string;
   mensaje: string;
-  donde?: string;
+  donde?: string; // pila de llamadas (archivo y línea)
+  componentes?: string; // pila de componentes de React
+  pagina?: string;
+  version?: string;
+  navegador?: string;
 }
 
-export function guardarError(e: unknown, donde?: string) {
+export function guardarError(e: unknown, componentes?: string) {
   try {
     const lista: ErrorGuardado[] = JSON.parse(localStorage.getItem(CLAVE) || '[]');
     const err = e as Error;
-    lista.unshift({ fecha: new Date().toISOString(), mensaje: `${err?.name ?? 'Error'}: ${err?.message ?? String(e)}`.slice(0, 300), donde: (donde ?? err?.stack)?.slice(0, 600) });
+    lista.unshift({
+      fecha: new Date().toISOString(),
+      mensaje: `${err?.name ?? 'Error'}: ${err?.message ?? String(e)}`.slice(0, 300),
+      donde: err?.stack?.slice(0, 1500),
+      componentes: componentes?.slice(0, 1200),
+      pagina: window.location.hash || '#hoy',
+      version: __VERSION__,
+      navegador: navigator.userAgent,
+    });
     localStorage.setItem(CLAVE, JSON.stringify(lista.slice(0, 15)));
   } catch {
     /* sin almacenamiento: no pasa nada */
@@ -79,6 +91,25 @@ export function borrarErrores() {
 }
 
 export function escucharErrores() {
-  window.addEventListener('error', (ev) => guardarError(ev.error ?? ev.message, 'window.onerror'));
-  window.addEventListener('unhandledrejection', (ev) => guardarError(ev.reason, 'promesa sin manejar'));
+  window.addEventListener('error', (ev) => guardarError(ev.error ?? ev.message));
+  window.addEventListener('unhandledrejection', (ev) => guardarError(ev.reason));
+}
+
+/** Texto del reporte de fallas, para copiarlo y enviarlo a soporte. */
+export function textoReporte(errores = erroresGuardados()): string {
+  return errores
+    .map((e) => [`${e.fecha} · ${e.mensaje}`, `Pantalla: ${e.pagina ?? '?'} · Versión: ${e.version ?? '?'}`, e.navegador, e.donde, e.componentes].filter(Boolean).join('\n'))
+    .join('\n\n────────\n\n');
+}
+
+/** Copia el reporte al portapapeles (o lo muestra para copiarlo a mano). */
+export async function copiarReporte(): Promise<boolean> {
+  const texto = textoReporte();
+  try {
+    await navigator.clipboard.writeText(texto);
+    return true;
+  } catch {
+    prompt('Copia este texto:', texto);
+    return false;
+  }
 }

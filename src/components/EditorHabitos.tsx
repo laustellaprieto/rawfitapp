@@ -9,8 +9,8 @@ export function EditorHabitos({ habitos }: { habitos: Habito[] }) {
   const [emoji, setEmoji] = useState('✨');
   const maxOrden = useMemo(() => habitos.reduce((m, h) => Math.max(m, h.orden), -1), [habitos]);
 
-  const agregar = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // No es un <form>: este editor vive dentro del formulario del onboarding (los formularios no se pueden anidar).
+  const agregar = async () => {
     if (!nuevo.trim()) return;
     await db.habitos.add({ nombre: nuevo.trim(), emoji, orden: maxOrden + 1, activo: true });
     setNuevo('');
@@ -101,16 +101,29 @@ export function EditorHabitos({ habitos }: { habitos: Habito[] }) {
         )}
       </div>
 
-      <form onSubmit={agregar} className="mt-4">
+      <div className="mt-4">
         <label className="etiqueta" htmlFor="nuevo-habito">Agregar hábito</label>
         <div className="flex gap-2">
           <SelectorEmoji valor={emoji} onChange={setEmoji} className="bg-campo size-12 rounded-xl" etiqueta="Emoji del nuevo hábito" />
-          <input id="nuevo-habito" value={nuevo} onChange={(e) => setNuevo(e.target.value)} className="campo" placeholder="Ej.: Estirar 10 minutos" maxLength={50} />
-          <button className="btn-oro shrink-0 !px-3.5" aria-label="Agregar hábito" disabled={!nuevo.trim()}>
+          <input
+            id="nuevo-habito"
+            value={nuevo}
+            onChange={(e) => setNuevo(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                agregar();
+              }
+            }}
+            className="campo"
+            placeholder="Ej.: Estirar 10 minutos"
+            maxLength={50}
+          />
+          <button type="button" onClick={agregar} className="btn-oro shrink-0 !px-3.5" aria-label="Agregar hábito" disabled={!nuevo.trim()}>
             <Icon name="mas" size={20} strokeWidth={2.4} />
           </button>
         </div>
-      </form>
+      </div>
       <p className="text-suave mt-3 text-xs">Toca el emoji o el nombre para cambiarlos. El interruptor pausa un hábito sin borrar su historial.</p>
     </div>
   );

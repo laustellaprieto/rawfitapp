@@ -263,6 +263,9 @@ export async function recuperarContrasena(email: string) {
   if (error) throw new Error(traducirError(error));
 }
 
+/** Cierra la ventana de contraseña nueva sin cambiarla. */
+export const cancelarRecuperacion = () => set({ recuperando: false });
+
 export async function cambiarContrasena(password: string) {
   const { error } = await supabase!.auth.updateUser({ password });
   if (error) throw new Error(traducirError(error));

@@ -4,7 +4,9 @@ import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  build: { chunkSizeWarningLimit: 900 },
+  // Mapas de código: permiten traducir los reportes de error de la app publicada a archivo y línea.
+  build: { chunkSizeWarningLimit: 900, sourcemap: true },
+  define: { __VERSION__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ')) },
   plugins: [
     react(),
     tailwindcss(),
@@ -37,6 +39,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globIgnores: ['**/*.map'],
         navigateFallback: '/index.html',
       },
     }),

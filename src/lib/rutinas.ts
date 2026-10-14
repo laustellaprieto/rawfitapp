@@ -38,7 +38,7 @@ export function sesionDesdeRutina(r: Rutina): Sesion {
   };
 }
 
-/** Abre el PDF de nutrición: con internet usa el enlace de la nube; sin internet, la copia guardada. */
+/** Abre la guía de alimentación (PDF): con internet usa el enlace de la nube; sin internet, la copia guardada. */
 export async function abrirPdf(n: Nutricion) {
   // Se abre la ventana antes de esperar (si no, Safari la bloquea).
   const ventana = window.open('', '_blank');
@@ -50,7 +50,7 @@ export async function abrirPdf(n: Nutricion) {
   if (!url && n.archivo) url = URL.createObjectURL(n.archivo);
   if (!url) {
     ventana?.close();
-    alert('No se pudo abrir el PDF. Conéctate a internet e inténtalo de nuevo.');
+    alert('No se pudo abrir la guía. Conéctate a internet e inténtalo de nuevo.');
     return;
   }
   if (ventana) ventana.location.href = url;

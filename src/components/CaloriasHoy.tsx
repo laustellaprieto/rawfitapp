@@ -82,7 +82,7 @@ export function CaloriasHoy({ perfil }: { perfil: Perfil }) {
           </button>
         )}
       </section>
-      <Sheet abierto={abierto} onCerrar={() => setAbierto(false)} titulo="Tus calorías">
+      <Sheet formulario abierto={abierto} onCerrar={() => setAbierto(false)} titulo="Tus calorías">
         {abierto && <EditorCalorias perfil={perfil} onCerrar={() => setAbierto(false)} />}
       </Sheet>
     </>

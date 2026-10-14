@@ -98,7 +98,7 @@ export default function Ejercicios() {
         {porGrupo.length === 0 && <p className="tarjeta text-suave py-8 text-center text-sm">No hay ejercicios con esos filtros.</p>}
       </div>
 
-      <Sheet abierto={!!editando} onCerrar={() => setEditando(null)} titulo={editando?.id ? 'Editar ejercicio' : 'Nuevo ejercicio'}>
+      <Sheet formulario abierto={!!editando} onCerrar={() => setEditando(null)} titulo={editando?.id ? 'Editar ejercicio' : 'Nuevo ejercicio'}>
         {editando && <FormPropio key={editando.id ?? 'nuevo'} ejercicio={editando} onCerrar={() => setEditando(null)} />}
       </Sheet>
     </>
@@ -212,6 +212,9 @@ function FormPropio({ ejercicio, onCerrar }: { ejercicio: EjercicioPropio; onCer
             <Icon name="basura" size={18} />
           </button>
         )}
+        <button type="button" onClick={onCerrar} className="btn-sec">
+          Cancelar
+        </button>
         <button className="btn-oro flex-1" disabled={!datos.nombre.trim()}>
           Guardar ejercicio
         </button>

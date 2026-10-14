@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import logo from '../../assets/logo.png';
-import { guardarError } from '../lib/version';
+import { copiarReporte, guardarError } from '../lib/version';
 
 interface Props {
   children: ReactNode;
@@ -69,6 +69,12 @@ export class Recuperacion extends Component<Props, Estado> {
         <p className="text-suave max-w-xs text-sm">No te preocupes: tus datos están guardados. Toca el botón para volver a cargar la app.</p>
         <button className="btn-oro" onClick={() => window.location.reload()}>
           Recargar la app
+        </button>
+        <button className="text-dorado text-sm font-semibold" onClick={async (e) => {
+          const ok = await copiarReporte();
+          (e.target as HTMLButtonElement).textContent = ok ? '¡Reporte copiado! Envíalo a soporte' : 'Copia el texto que apareció';
+        }}>
+          Copiar reporte del error
         </button>
         <p className="text-suave/60 max-w-xs text-[10px]">{error.message}</p>
       </div>

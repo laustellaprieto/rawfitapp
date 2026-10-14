@@ -9,7 +9,7 @@ import { EditorCalorias } from '../components/Calorias';
 import { SeccionCuenta } from '../components/Cuenta';
 import { useCuenta } from '../lib/nube';
 import type { Ir } from '../App';
-import { borrarErrores, erroresGuardados } from '../lib/version';
+import { borrarErrores, copiarReporte, erroresGuardados } from '../lib/version';
 import { EditorHabitos } from '../components/EditorHabitos';
 import { calcularCalorias, kcal, macrosDelPerfil, textoMeta } from '../lib/calorias';
 import { Icon } from '../components/Icon';
@@ -195,7 +195,7 @@ export default function Ajustes({ perfil, ir }: { perfil: Perfil; ir: Ir }) {
         {AVISO_SALUD}
       </p>
 
-      <Sheet abierto={caloriasAbierto} onCerrar={() => setCaloriasAbierto(false)} titulo="Tus calorías">
+      <Sheet formulario abierto={caloriasAbierto} onCerrar={() => setCaloriasAbierto(false)} titulo="Tus calorías">
         {caloriasAbierto && <EditorCalorias perfil={perfil} onCerrar={() => setCaloriasAbierto(false)} />}
       </Sheet>
       <Sheet abierto={habitosAbierto} onCerrar={() => setHabitosAbierto(false)} titulo="Mis hábitos">
@@ -226,7 +226,6 @@ function ErroresRecientes() {
   const [errores, setErrores] = useState(erroresGuardados);
   const [copiado, setCopiado] = useState(false);
   if (!errores.length) return null;
-  const texto = errores.map((e) => `${e.fecha} · ${e.mensaje}\n${e.donde ?? ''}`).join('\n\n');
   return (
     <section className="tarjeta animate-entrada mb-4">
       <h2 className="titulo text-2xl">Fallas recientes</h2>
@@ -236,14 +235,7 @@ function ErroresRecientes() {
       <div className="flex gap-2">
         <button
           className="btn-sec flex-1"
-          onClick={async () => {
-            try {
-              await navigator.clipboard.writeText(texto);
-              setCopiado(true);
-            } catch {
-              prompt('Copia este texto:', texto);
-            }
-          }}
+          onClick={async () => setCopiado(await copiarReporte())}
         >
           {copiado ? '¡Copiado!' : 'Copiar reporte'}
         </button>

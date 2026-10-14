@@ -79,7 +79,7 @@ export function EntrenoDeHoy({ onEmpezar }: { onEmpezar: (r: Rutina) => void }) 
   );
 }
 
-/** Plan de nutrición en PDF que subió la coach. */
+/** Guía de alimentación en PDF que subió la coach. */
 export function TarjetaNutricion() {
   const planes = useLiveQuery(() => db.nutricion.toArray(), []) ?? [];
   if (!planes.length) return null;
@@ -87,7 +87,7 @@ export function TarjetaNutricion() {
   return (
     <section className="tarjeta animate-entrada mb-4">
       <p className="text-dorado flex items-center gap-1.5 text-[11px] font-semibold tracking-wider uppercase">
-        <Icon name="documento" size={14} /> Tu plan de nutrición
+        <Icon name="documento" size={14} /> Tu guía de alimentación
       </p>
       <div className="mt-2 flex flex-col gap-1">
         {ordenados.map((n, i) => (
@@ -98,7 +98,7 @@ export function TarjetaNutricion() {
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">{n.nombre}</span>
               <span className="text-suave block text-xs">
-                {i === 0 ? 'Plan actual · ' : ''}subido {fechaRelativa(toISO(new Date(n.subidoEn))).toLowerCase()}
+                {i === 0 ? 'Guía actual · ' : ''}subido {fechaRelativa(toISO(new Date(n.subidoEn))).toLowerCase()}
               </span>
             </span>
             <span className="text-dorado text-xs font-semibold">Abrir</span>

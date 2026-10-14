@@ -64,7 +64,7 @@ export default function ClienteDetalle({ cliente, onVolver }: { cliente: PerfilN
           opciones={[
             { valor: 'progreso' as const, texto: 'Progreso' },
             { valor: 'entreno' as const, texto: 'Entreno' },
-            { valor: 'nutricion' as const, texto: 'Nutrición' },
+            { valor: 'nutricion' as const, texto: 'Alimentación' },
             { valor: 'habitos' as const, texto: 'Hábitos' },
           ]}
           valor={pestana}
@@ -76,7 +76,7 @@ export default function ClienteDetalle({ cliente, onVolver }: { cliente: PerfilN
       {!d && !error && <p className="text-suave py-10 text-center text-sm">Cargando…</p>}
       {d && pestana === 'progreso' && <Progreso d={d} cliente={cliente} />}
       {d && pestana === 'entreno' && <Entreno d={d} guardar={guardar} />}
-      {d && pestana === 'nutricion' && <Nutricion d={d} cliente={cliente} recargar={cargar} />}
+      {d && pestana === 'nutricion' && <GuiaAlimentacion d={d} cliente={cliente} recargar={cargar} />}
       {d && pestana === 'habitos' && <Habitos d={d} guardar={guardar} />}
     </>
   );
@@ -257,11 +257,12 @@ function Entreno({ d, guardar }: { d: DatosCliente; guardar: (t: 'rutinas', uid:
           </ul>
         </button>
       ))}
-      <Sheet abierto={!!editando} onCerrar={() => setEditando(null)} titulo={editando?.nombre ? 'Editar rutina' : 'Nueva rutina'}>
+      <Sheet formulario abierto={!!editando} onCerrar={() => setEditando(null)} titulo={editando?.nombre ? 'Editar rutina' : 'Nueva rutina'}>
         {editando && (
           <EditorRutina
             key={editando.uid}
             rutina={editando}
+            onCancelar={() => setEditando(null)}
             onGuardar={async (r) => {
               await guardar('rutinas', editando.uid!, limpiar(r));
               setEditando(null);
@@ -281,38 +282,40 @@ function Entreno({ d, guardar }: { d: DatosCliente; guardar: (t: 'rutinas', uid:
   );
 }
 
-/* ───────────── Nutrición ───────────── */
+/* ───────────── Guía de alimentación ───────────── */
 
-function Nutricion({ d, cliente, recargar }: { d: DatosCliente; cliente: PerfilNube; recargar: () => Promise<void> }) {
-  const input = useRef<HTMLInputElement>(null);
-  const [subiendo, setSubiendo] = useState(false);
+const MAX_MB = 20;
+const tamano = (b: number) => (b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toLocaleString('es', { maximumFractionDigits: 1 })} MB`);
 
-  const subir = async (f: File | undefined) => {
-    if (!f) return;
-    if (f.type !== 'application/pdf' && !f.name.toLowerCase().endsWith('.pdf')) return alert('Elige un archivo PDF.');
-    if (f.size > 20 * 1024 * 1024) return alert('El PDF pesa más de 20 MB. Comprímelo e inténtalo de nuevo.');
-    const nombre = prompt('Nombre del plan (lo verá tu cliente):', f.name.replace(/\.pdf$/i, ''));
-    if (nombre === null) return;
-    setSubiendo(true);
-    try {
-      await subirPdf(cliente.id, f, nombre.trim() || 'Plan de nutrición');
-      await recargar();
-    } catch (e) {
-      alert(traducirError(e));
-    } finally {
-      setSubiendo(false);
-      if (input.current) input.current.value = '';
-    }
-  };
+/** Abre un archivo de la nube en otra pestaña (la ventana se abre antes de esperar, si no Safari la bloquea). */
+async function abrirArchivo(path: string) {
+  const ventana = window.open('', '_blank');
+  try {
+    const url = await urlFirmada('nutricion', path);
+    if (ventana) ventana.location.href = url;
+    else window.location.href = url;
+  } catch (e) {
+    ventana?.close();
+    alert(traducirError(e));
+  }
+}
+
+function GuiaAlimentacion({ d, cliente, recargar }: { d: DatosCliente; cliente: PerfilNube; recargar: () => Promise<void> }) {
+  const [abierto, setAbierto] = useState(false);
+  const [aviso, setAviso] = useState<{ tipo: 'ok' | 'error'; texto: string }>();
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-suave text-sm">El PDF más reciente aparece como “Plan actual” en la pantalla Hoy de tu cliente, y lo puede abrir sin internet.</p>
-      <button className="btn-oro w-full" disabled={subiendo} onClick={() => input.current?.click()}>
-        <Icon name="subir" size={18} /> {subiendo ? 'Subiendo…' : 'Subir PDF de nutrición'}
+      <p className="text-suave text-sm">La guía más reciente aparece como “Guía actual” en la pantalla Hoy de tu cliente, y la puede abrir sin internet.</p>
+      <button className="btn-oro w-full" onClick={() => setAbierto(true)}>
+        <Icon name="subir" size={18} /> Subir guía de alimentación
       </button>
-      <input ref={input} type="file" accept="application/pdf,.pdf" className="hidden" onChange={(e) => subir(e.target.files?.[0])} />
-      {d.nutricion.length === 0 && <p className="tarjeta text-suave text-center text-sm">Aún no hay planes de nutrición.</p>}
+      {aviso && (
+        <p role="status" className={`animate-entrada rounded-xl px-3 py-2 text-sm ${aviso.tipo === 'ok' ? 'bg-baja/10 text-baja' : 'bg-sube/10 text-sube'}`}>
+          {aviso.texto}
+        </p>
+      )}
+      {d.nutricion.length === 0 && <p className="tarjeta text-suave text-center text-sm">Aún no hay guías de alimentación.</p>}
       {d.nutricion.map((n, i) => (
         <div key={n.uid} className="tarjeta flex items-center gap-3 !p-3">
           <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${i === 0 ? 'bg-dorado/15 text-dorado' : 'bg-campo text-suave'}`}>
@@ -321,21 +324,22 @@ function Nutricion({ d, cliente, recargar }: { d: DatosCliente; cliente: PerfilN
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{n.nombre}</p>
             <p className="text-suave text-xs">
-              {i === 0 && 'Plan actual · '}
+              {i === 0 && 'Guía actual · '}
               {fechaRelativa(toISO(new Date(n.subidoEn)))}
             </p>
           </div>
-          <button onClick={async () => window.open(await urlFirmada('nutricion', n.path), '_blank')} className="text-dorado text-xs font-semibold">
+          <button onClick={() => abrirArchivo(n.path)} className="text-dorado text-xs font-semibold">
             Ver
           </button>
           <button
             onClick={async () => {
-              if (!confirm(`¿Borrar "${n.nombre}"?`)) return;
+              if (!confirm(`¿Borrar "${n.nombre}"? Tu cliente ya no la verá.`)) return;
               try {
                 await borrarPdf(cliente.id, n);
                 await recargar();
+                setAviso({ tipo: 'ok', texto: `Se borró “${n.nombre}”.` });
               } catch (e) {
-                alert(traducirError(e));
+                setAviso({ tipo: 'error', texto: `No se pudo borrar: ${traducirError(e)}` });
               }
             }}
             className="text-suave hover:text-sube p-1"
@@ -345,7 +349,90 @@ function Nutricion({ d, cliente, recargar }: { d: DatosCliente; cliente: PerfilN
           </button>
         </div>
       ))}
+
+      <Sheet formulario abierto={abierto} onCerrar={() => setAbierto(false)} titulo="Nueva guía de alimentación">
+        {abierto && (
+          <FormGuia
+            cliente={cliente}
+            onCancelar={() => setAbierto(false)}
+            onListo={async (nombre) => {
+              setAbierto(false);
+              setAviso({ tipo: 'ok', texto: `Listo: “${nombre}” ya está en la app de tu cliente.` });
+              await recargar();
+            }}
+          />
+        )}
+      </Sheet>
     </div>
+  );
+}
+
+function FormGuia({ cliente, onCancelar, onListo }: { cliente: PerfilNube; onCancelar: () => void; onListo: (nombre: string) => void }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [archivo, setArchivo] = useState<File>();
+  const [nombre, setNombre] = useState('');
+  const [error, setError] = useState('');
+  const [subiendo, setSubiendo] = useState(false);
+
+  const elegir = (f: File | undefined) => {
+    setError('');
+    if (!f) return;
+    if (f.type !== 'application/pdf' && !f.name.toLowerCase().endsWith('.pdf')) return setError('El archivo debe ser un PDF.');
+    if (f.size > MAX_MB * 1024 * 1024) return setError(`El PDF pesa más de ${MAX_MB} MB. Comprímelo e inténtalo de nuevo.`);
+    setArchivo(f);
+    if (!nombre.trim()) setNombre(f.name.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ').trim());
+  };
+
+  const guardar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!archivo || !nombre.trim()) return;
+    setSubiendo(true);
+    setError('');
+    try {
+      await subirPdf(cliente.id, archivo, nombre.trim());
+      onListo(nombre.trim());
+    } catch (err) {
+      setError(`No se pudo subir la guía: ${traducirError(err)}`);
+    } finally {
+      setSubiendo(false);
+    }
+  };
+
+  return (
+    <form onSubmit={guardar} className="flex flex-col gap-4">
+      <div>
+        <span className="etiqueta">Archivo PDF</span>
+        <button
+          type="button"
+          onClick={() => input.current?.click()}
+          className={`flex w-full items-center gap-3 rounded-2xl border border-dashed px-4 py-4 text-left transition ${archivo ? 'border-dorado/50 bg-dorado/[0.07]' : 'bg-campo border-white/15'}`}
+        >
+          <Icon name="documento" size={24} className="text-dorado shrink-0" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold">{archivo ? archivo.name : 'Elegir PDF'}</span>
+            <span className="text-suave block text-xs">{archivo ? `${tamano(archivo.size)} · toca para cambiarlo` : `Máximo ${MAX_MB} MB`}</span>
+          </span>
+        </button>
+        <input ref={input} type="file" accept="application/pdf,.pdf" className="hidden" onChange={(e) => elegir(e.target.files?.[0])} />
+      </div>
+      <div>
+        <label className="etiqueta" htmlFor="guia-nombre">Nombre de la guía (lo verá tu cliente)</label>
+        <input id="guia-nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} className="campo" placeholder="Ej.: Guía de alimentación · octubre" maxLength={80} />
+      </div>
+      {error && (
+        <p role="alert" className="bg-sube/10 text-sube rounded-xl px-3 py-2 text-sm">
+          {error}
+        </p>
+      )}
+      <div className="flex gap-2">
+        <button type="button" onClick={onCancelar} className="btn-sec" disabled={subiendo}>
+          Cancelar
+        </button>
+        <button className="btn-oro flex-1" disabled={!archivo || !nombre.trim() || subiendo}>
+          {subiendo ? 'Subiendo…' : 'Guardar'}
+        </button>
+      </div>
+    </form>
   );
 }
 

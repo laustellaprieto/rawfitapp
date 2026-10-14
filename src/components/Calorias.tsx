@@ -180,9 +180,14 @@ export function EditorCalorias({ perfil, onCerrar }: { perfil: Perfil; onCerrar:
       <SelectorMeta datos={d} onChange={cambiar} />
       {r && <ResultadoCaloriasTarjeta r={r} />}
       {m && <Macros m={m} onChange={cambiar} />}
-      <button className="btn-oro w-full" disabled={!ok}>
-        Guardar
-      </button>
+      <div className="flex gap-2">
+        <button type="button" onClick={onCerrar} className="btn-sec">
+          Cancelar
+        </button>
+        <button className="btn-oro flex-1" disabled={!ok}>
+          Guardar
+        </button>
+      </div>
     </form>
   );
 }

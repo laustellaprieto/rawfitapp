@@ -9,7 +9,17 @@ import { Buscador } from '../entreno/Buscador';
 type EjTxt = Omit<EjercicioRutina, 'series' | 'peso' | 'rir'> & { series: string; peso: string; rir: string };
 
 /** Formulario de la coach para crear o editar una rutina de un cliente. */
-export function EditorRutina({ rutina, onGuardar, onBorrar }: { rutina: Rutina; onGuardar: (r: Rutina) => Promise<void>; onBorrar?: () => Promise<void> }) {
+export function EditorRutina({
+  rutina,
+  onGuardar,
+  onBorrar,
+  onCancelar,
+}: {
+  rutina: Rutina;
+  onGuardar: (r: Rutina) => Promise<void>;
+  onBorrar?: () => Promise<void>;
+  onCancelar: () => void;
+}) {
   const [nombre, setNombre] = useState(rutina.nombre);
   const [dia, setDia] = useState(rutina.dia ?? '');
   const [notas, setNotas] = useState(rutina.notas ?? '');
@@ -123,6 +133,9 @@ export function EditorRutina({ rutina, onGuardar, onBorrar }: { rutina: Rutina; 
               <Icon name="basura" size={18} />
             </button>
           )}
+          <button type="button" onClick={onCancelar} className="btn-sec">
+            Cancelar
+          </button>
           <button className="btn-oro flex-1" disabled={guardando || !nombre.trim() || !ejs.length}>
             {guardando ? 'Guardando…' : 'Guardar rutina'}
           </button>

@@ -116,7 +116,7 @@ export default function Fotos({ perfil }: { perfil: Perfil }) {
         </>
       )}
 
-      <Sheet abierto={!!editando} onCerrar={() => setEditando(null)} titulo={editando?.id ? 'Editar check-in' : 'Nuevo check-in'}>
+      <Sheet formulario abierto={!!editando} onCerrar={() => setEditando(null)} titulo={editando?.id ? 'Editar check-in' : 'Nuevo check-in'}>
         {editando && <FormCheckin key={editando.id ?? 'nuevo'} checkin={editando} existentes={lista} onCerrar={() => setEditando(null)} />}
       </Sheet>
       {ver && <Visor foto={ver.foto} checkin={ver.checkin} onCerrar={() => setVer(null)} />}
@@ -269,6 +269,9 @@ function FormCheckin({ checkin, existentes, onCerrar }: { checkin: Checkin; exis
             <Icon name="basura" size={18} />
           </button>
         )}
+        <button type="button" onClick={onCerrar} className="btn-sec">
+          Cancelar
+        </button>
         <button className="btn-oro flex-1" disabled={guardando || !tieneFoto || !fecha}>
           {guardando ? 'Guardando…' : 'Guardar check-in'}
         </button>

@@ -6,6 +6,7 @@ import { fechaRelativa, toISO } from '../lib/fechas';
 import {
   cambiarCompartirFotos,
   cambiarContrasena,
+  cancelarRecuperacion,
   cerrarSesion,
   dejarCoach,
   eliminarCuenta,
@@ -28,7 +29,7 @@ type Modo = 'registro' | 'login' | 'recuperar';
 /** Hoja para crear cuenta, iniciar sesión o recuperar la contraseña. */
 export function HojaAcceso({ abierto, modoInicial = 'registro', onCerrar }: { abierto: boolean; modoInicial?: Modo; onCerrar: () => void }) {
   return (
-    <Sheet abierto={abierto} onCerrar={onCerrar} titulo="Tu cuenta">
+    <Sheet formulario abierto={abierto} onCerrar={onCerrar} titulo="Tu cuenta">
       {abierto && <FormAcceso modoInicial={modoInicial} onListo={onCerrar} />}
     </Sheet>
   );
@@ -162,9 +163,14 @@ function FormAcceso({ modoInicial, onListo }: { modoInicial: Modo; onListo: () =
         </p>
       )}
 
-      <button className="btn-oro w-full" disabled={!valido || cargando}>
-        {cargando ? 'Un momento…' : modo === 'registro' ? 'Crear cuenta' : modo === 'login' ? 'Iniciar sesión' : 'Enviar enlace'}
-      </button>
+      <div className="flex gap-2">
+        <button type="button" onClick={onListo} className="btn-sec">
+          Cancelar
+        </button>
+        <button className="btn-oro flex-1" disabled={!valido || cargando}>
+          {cargando ? 'Un momento…' : modo === 'registro' ? 'Crear cuenta' : modo === 'login' ? 'Iniciar sesión' : 'Enviar enlace'}
+        </button>
+      </div>
 
       {modo === 'login' && (
         <button type="button" onClick={() => setModo('recuperar')} className="text-suave text-center text-sm hover:text-texto">
@@ -230,7 +236,7 @@ export function SeccionCuenta({ onAbrirCoach }: { onAbrirCoach: () => void }) {
         <h2 className="titulo text-2xl">Tu cuenta</h2>
         <p className="text-suave mt-1 mb-4 text-sm">
           Opcional. Con una cuenta tu progreso se guarda en la nube, puedes usarlo en otro celular y, si eres cliente de {NOMBRE_COACH}, recibir tus entrenamientos,
-          hábitos y plan de nutrición.
+          hábitos y guía de alimentación.
         </p>
         <div className="grid grid-cols-2 gap-2">
           <button className="btn-oro" onClick={() => setAcceso('registro')}>
@@ -268,7 +274,7 @@ export function SeccionCuenta({ onAbrirCoach }: { onAbrirCoach: () => void }) {
       {p?.rol === 'coach' ? (
         <div className="bg-dorado/10 rounded-2xl p-4">
           <p className="text-champagne font-semibold">Eres coach</p>
-          <p className="text-suave mt-0.5 text-sm">Administra solicitudes, entrenamientos, hábitos y nutrición de tus clientes.</p>
+          <p className="text-suave mt-0.5 text-sm">Administra solicitudes, entrenamientos, hábitos y guías de alimentación de tus clientes.</p>
           <button className="btn-oro mt-3 w-full" onClick={onAbrirCoach}>
             Abrir panel de coach
           </button>
@@ -389,7 +395,7 @@ export function DialogosCuenta() {
           </button>
         </div>
       </Sheet>
-      <Sheet abierto={c.recuperando} onCerrar={() => {}} titulo="Nueva contraseña">
+      <Sheet formulario abierto={c.recuperando} onCerrar={cancelarRecuperacion} titulo="Nueva contraseña">
         <form
           className="flex flex-col gap-4"
           onSubmit={async (e) => {

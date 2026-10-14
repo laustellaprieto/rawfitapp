@@ -139,7 +139,7 @@ export default function Medidas({ perfil, abrirForm }: { perfil: Perfil; abrirFo
         </>
       )}
 
-      <Sheet abierto={!!editando} onCerrar={() => setEditando(null)} titulo={editando?.id ? 'Editar medición' : 'Nueva medición'}>
+      <Sheet formulario abierto={!!editando} onCerrar={() => setEditando(null)} titulo={editando?.id ? 'Editar medición' : 'Nueva medición'}>
         {editando && <FormMedicion key={editando.id ?? 'nueva'} medicion={editando} onCerrar={() => setEditando(null)} />}
       </Sheet>
     </>
@@ -269,6 +269,9 @@ function FormMedicion({ medicion, onCerrar }: { medicion: Medicion; onCerrar: ()
             <Icon name="basura" size={18} />
           </button>
         )}
+        <button type="button" onClick={onCerrar} className="btn-sec">
+          Cancelar
+        </button>
         <button className="btn-oro flex-1" disabled={!algun || !fecha}>
           Guardar
         </button>

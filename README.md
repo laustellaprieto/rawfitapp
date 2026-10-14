@@ -16,7 +16,7 @@ App web instalable (PWA) de **Stella Prieto · Entrenadora deportiva · [@rawfit
 | Progreso | Peso, cintura y abdomen; resumen, gráficas, análisis automático, cintura/estatura; check-ins de fotos (frente, perfil, espalda) con comparador antes/después |
 | Entreno | Sesiones con ejercicios del banco, series con reps, kg y RIR; volumen, historial, récords y volumen por grupo muscular |
 | Ejercicios | Banco de 112 ejercicios con filtros y buscador; ejercicios propios |
-| Panel de coach | Solicitudes de clientes, lista de clientes y, por cliente: progreso (hábitos, racha, medidas, sesiones, check-ins y fotos si las comparte), rutinas con objetivos, PDF de nutrición y hábitos asignados |
+| Panel de coach | Solicitudes de clientes, lista de clientes y, por cliente: progreso (hábitos, racha, medidas, sesiones, check-ins y fotos si las comparte), rutinas con objetivos, guía de alimentación en PDF y hábitos asignados |
 | Ajustes | Cuenta (crear, iniciar sesión, pedir ser cliente, compartir fotos, eliminar cuenta), datos, calorías, hábitos, copia de seguridad, borrar datos y aviso de salud |
 
 ## Archivos que puedes editar sin programar
@@ -47,8 +47,8 @@ Sin este paso la app funciona igual, pero solo en el dispositivo (sin cuentas).
 
 1. Tu cliente crea su cuenta en la app (Ajustes → Tu cuenta) y toca **“Quiero ser cliente de Stella”**.
 2. Tú la aceptas en **Coach → Solicitudes**.
-3. En **Coach → Mis clientes → (cliente)** ves su progreso y le asignas **rutinas** (Entreno), su **PDF de nutrición** (Nutrición) y **hábitos** (Hábitos).
-4. Tu cliente lo ve en su app: “Hoy te toca…” y “Tu plan de nutrición” en Hoy, “Tu plan de entrenamiento” en Entreno, y los hábitos marcados “De tu coach”.
+3. En **Coach → Mis clientes → (cliente)** ves su progreso y le asignas **rutinas** (Entreno), su **guía de alimentación** en PDF (Alimentación) y **hábitos** (Hábitos).
+4. Tu cliente lo ve en su app: “Hoy te toca…” y “Tu guía de alimentación” en Hoy, “Tu plan de entrenamiento” en Entreno, y los hábitos marcados “De tu coach”.
 5. Las fotos de progreso solo te llegan si tu cliente activa **“Compartir mis fotos con mi coach”**.
 
 El texto del aviso de privacidad está en `src/data/privacidad.ts`: revísalo y ajústalo a la ley de tu país.

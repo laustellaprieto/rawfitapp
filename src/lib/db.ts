@@ -132,7 +132,7 @@ export interface Rutina extends Sincronizable {
   notas?: string;
 }
 
-/** Plan de nutrición en PDF que sube la coach. */
+/** Guía de alimentación en PDF que sube la coach (la tabla se llama nutricion por compatibilidad). */
 export interface Nutricion extends Sincronizable {
   id?: number;
   nombre: string;

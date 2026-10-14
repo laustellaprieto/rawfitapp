@@ -129,7 +129,7 @@ export default function Entreno({ accion }: { accion?: string }) {
         </>
       )}
 
-      <Sheet abierto={!!editando} onCerrar={() => setEditando(null)} titulo={editando?.id ? 'Editar sesión' : 'Nueva sesión'}>
+      <Sheet formulario abierto={!!editando} onCerrar={() => setEditando(null)} titulo={editando?.id ? 'Editar sesión' : 'Nueva sesión'}>
         {editando && <FormSesion key={editando.id ?? editando.rutinaUid ?? 'nueva'} sesion={editando} historial={lista} onCerrar={() => setEditando(null)} />}
       </Sheet>
     </>

@@ -18,7 +18,7 @@ export const AVISO_PRIVACIDAD: { titulo: string; texto: string }[] = [
   {
     titulo: 'Tu coach',
     texto:
-      'Solo si pides ser cliente y tu coach te acepta, ella puede ver tu progreso y subirte entrenamientos, hábitos y tu plan de nutrición. Tus fotos de progreso solo se suben si activas “Compartir mis fotos con mi coach”, y puedes desactivarlo cuando quieras.',
+      'Solo si pides ser cliente y tu coach te acepta, ella puede ver tu progreso y subirte entrenamientos, hábitos y tu guía de alimentación. Tus fotos de progreso solo se suben si activas “Compartir mis fotos con mi coach”, y puedes desactivarlo cuando quieras.',
   },
   {
     titulo: 'Para qué se usan',
