@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { importarCopia } from '../lib/copia';
 import logo from '../../assets/logo.png';
 import { calcularMacros, valido } from '../lib/calorias';
 import { db, guardarPerfil, type Perfil, type Sexo } from '../lib/db';
@@ -32,6 +33,8 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
   });
   const { todos } = useHabitos();
   const [acceso, setAcceso] = useState(false);
+  const archivo = useRef<HTMLInputElement>(null);
+  const [errorImportar, setErrorImportar] = useState('');
   const cambiar = (d: Partial<DatosCaloriasTxt>) => setCal((c) => ({ ...c, ...d }));
 
   const edad = parseNum(cal.edad);
@@ -96,8 +99,31 @@ export default function Onboarding({ perfil }: { perfil: Perfil }) {
             <label className="etiqueta" htmlFor="o-fecha">Fecha de inicio del reto</label>
             <input id="o-fecha" type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className="campo" required />
             <p className="text-suave mt-2 text-xs">Ese día será tu “Día 1”. Normalmente es hoy.</p>
+            <button type="button" onClick={() => archivo.current?.click()} className="bg-campo/60 mt-8 rounded-2xl px-4 py-3 text-left text-sm">
+              <span className="text-suave">¿Tienes una copia de seguridad?</span> <span className="text-dorado font-semibold">Importar copia</span>
+              <span className="text-suave block text-xs">Recupera tus datos exportados desde otro celular o desde la app anterior.</span>
+            </button>
+            <input
+              ref={archivo}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                setErrorImportar('');
+                try {
+                  await importarCopia(f);
+                } catch (err) {
+                  setErrorImportar((err as Error).message);
+                } finally {
+                  e.target.value = '';
+                }
+              }}
+            />
+            {errorImportar && <p className="text-sube mt-2 text-xs">{errorImportar}</p>}
             {nubeConfigurada && (
-              <button type="button" onClick={() => setAcceso(true)} className="bg-campo/60 mt-8 rounded-2xl px-4 py-3 text-left text-sm">
+              <button type="button" onClick={() => setAcceso(true)} className="bg-campo/60 mt-3 rounded-2xl px-4 py-3 text-left text-sm">
                 <span className="text-suave">¿Ya tienes cuenta?</span> <span className="text-dorado font-semibold">Inicia sesión</span>
                 <span className="text-suave block text-xs">Recuperas tu progreso y el plan de tu coach.</span>
               </button>
