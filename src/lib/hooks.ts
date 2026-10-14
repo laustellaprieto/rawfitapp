@@ -38,7 +38,14 @@ export function useDiasDeUso(): number | undefined {
   return useLiveQuery(async () => {
     const tablas = [db.registros, db.mediciones, db.sesiones, db.checkins, db.comidas];
     const dias = new Set<string>();
-    for (const t of tablas) for (const f of await t.orderBy('fecha').uniqueKeys()) dias.add(String(f));
+    for (const t of tablas) {
+      try {
+        // Solo lee el índice de fechas (sin cargar fotos). keys() en vez de uniqueKeys(): más compatible con Safari.
+        for (const f of await t.orderBy('fecha').keys()) dias.add(String(f));
+      } catch (e) {
+        console.error('No se pudieron contar los días de', t.name, e);
+      }
+    }
     return dias.size;
   }, []);
 }

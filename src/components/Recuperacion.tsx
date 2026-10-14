@@ -60,6 +60,8 @@ export class Recuperacion extends Component<Props, Estado> {
               Recargar la app
             </button>
           </div>
+          <BotonReporte />
+          <p className="text-suave/60 mt-1 text-[10px] break-words">{error.message}</p>
         </div>
       );
     return (
@@ -70,15 +72,39 @@ export class Recuperacion extends Component<Props, Estado> {
         <button className="btn-oro" onClick={() => window.location.reload()}>
           Recargar la app
         </button>
-        <button className="text-dorado text-sm font-semibold" onClick={async (e) => {
-          const ok = await copiarReporte();
-          (e.target as HTMLButtonElement).textContent = ok ? '¡Reporte copiado! Envíalo a soporte' : 'Copia el texto que apareció';
-        }}>
-          Copiar reporte del error
-        </button>
+        <BotonReporte />
         <p className="text-suave/60 max-w-xs text-[10px]">{error.message}</p>
       </div>
     );
+  }
+}
+
+function BotonReporte() {
+  return (
+    <button
+      className="text-dorado mt-3 text-sm font-semibold"
+      onClick={async (e) => {
+        const ok = await copiarReporte();
+        (e.target as HTMLButtonElement).textContent = ok ? '¡Reporte copiado! Envíalo a soporte' : 'Copia el texto que apareció';
+      }}
+    >
+      Copiar reporte del error
+    </button>
+  );
+}
+
+/** Para partes opcionales de una pantalla: si fallan, se ocultan (y se registra la falla) sin tumbar la pantalla. */
+export class Opcional extends Component<{ children: ReactNode }, { error: boolean }> {
+  state = { error: false };
+  static getDerivedStateFromError() {
+    return { error: true };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Falla en una parte opcional', error, info.componentStack);
+    guardarError(error, info.componentStack ?? undefined);
+  }
+  render() {
+    return this.state.error ? null : this.props.children;
   }
 }
 

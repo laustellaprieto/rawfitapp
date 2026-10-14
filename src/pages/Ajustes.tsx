@@ -15,6 +15,7 @@ import { calcularCalorias, kcal, macrosDelPerfil, textoMeta } from '../lib/calor
 import { Icon } from '../components/Icon';
 import { Sheet } from '../components/Sheet';
 import { TarjetaOpinion } from '../components/Opinion';
+import { Opcional } from '../components/Recuperacion';
 import { nubeConfigurada } from '../config';
 import { Encabezado } from '../components/ui';
 
@@ -78,7 +79,11 @@ export default function Ajustes({ perfil, ir, pantalla }: { perfil: Perfil; ir: 
     <>
       <Encabezado subtitulo="Tu app, a tu manera" titulo="Ajustes" />
 
-      {nubeConfigurada && <TarjetaOpinion nombre={perfil.nombre} pantalla={pantalla} />}
+      {nubeConfigurada && (
+        <Opcional>
+          <TarjetaOpinion nombre={perfil.nombre} pantalla={pantalla} />
+        </Opcional>
+      )}
 
       <SeccionCuenta onAbrirCoach={() => ir('coach')} />
 
