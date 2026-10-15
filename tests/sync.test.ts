@@ -224,6 +224,18 @@ async function main() {
   assert.ok(!archivos.has(rutaPlato), 'al borrar la comida se borra su foto');
   console.log('✓ borrar una comida la borra de la nube con su foto');
 
+  // ── Una foto guardada como lo hace la pantalla Fotos (sin checkinUid) se enlaza y se sube ──
+  await marcarFotosParaSubir();
+  const idCheck = (await db.checkins.add({ fecha: hoyISO(), peso: 63 })) as number;
+  const idFoto = (await db.fotos.add({ checkinId: idCheck, pose: 'perfil', imagen: await paraGuardar(new Blob(['perfil'], { type: 'image/jpeg' })) })) as number;
+  await esperar();
+  await sincronizar(r, true);
+  const fotoEnlazada = (await db.fotos.get(idFoto))!;
+  assert.equal(fotoEnlazada.checkinUid, (await db.checkins.get(idCheck))!.uid, 'la foto queda enlazada a su check-in');
+  assert.ok(enNube(ANA, 'fotos').some((f) => f.uid === fotoEnlazada.uid && f.data.checkinUid === fotoEnlazada.checkinUid), 'y se sube');
+  assert.equal(await db.fotos.where('_p').equals(1).count(), 0, 'sin pendientes después de subir');
+  console.log('✓ una foto sin enlazar se enlaza a su check-in y se sube');
+
   // ── iPhone: foto vieja guardada como Blob que ya no se puede leer ──
   const idRota = await db.comidas.add({ fecha: hoyISO(), hora: '09:00', tipo: 'Desayuno', nota: 'Avena', imagen: await paraGuardar(new Blob(['avena'], { type: 'image/jpeg' })), fotoV: 7 });
   await esperar();

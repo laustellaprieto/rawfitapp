@@ -8,7 +8,8 @@
     "preview": "vite preview",
     "icons": "node scripts/generate-icons.mjs",
     "typecheck": "tsc -b",
-    "test:sync": "tsx tests/sync.test.ts && tsx tests/upgrade.test.ts"
+    "test:sync": "tsx tests/sync.test.ts && tsx tests/upgrade.test.ts && tsx tests/upgrade-v4.test.ts",
+    "bench:sync": "tsx tests/bench-sync.ts"
   },
   "repository": {
     "type": "git",

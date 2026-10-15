@@ -252,6 +252,21 @@ db.version(3).stores({
   comidas: '++id, fecha, &uid',
 });
 
+// v4: solo índices nuevos (no cambia ningún dato). `_p` permite encontrar los cambios pendientes y
+// `checkinUid` las fotos sin enlazar sin leer cada registro (las fotos pesan).
+db.version(4).stores({
+  perfil: 'id, &uid, _p',
+  habitos: '++id, orden, &uid, _p',
+  registros: '[habitoId+fecha], habitoId, fecha, &uid, _p',
+  mediciones: '++id, fecha, &uid, _p',
+  checkins: '++id, fecha, &uid, _p',
+  fotos: '++id, checkinId, &uid, checkinUid, _p',
+  sesiones: '++id, fecha, &uid, _p',
+  ejerciciosPropios: '++id, &uid, _p',
+  logros: 'id, fecha, &uid, _p',
+  comidas: '++id, fecha, &uid, _p',
+});
+
 export const perfilInicial = (): Perfil => ({
   id: 'main',
   nombre: '',

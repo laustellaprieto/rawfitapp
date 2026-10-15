@@ -98,16 +98,26 @@ for (const nombre of SINCRONIZADAS) {
 }
 
 /** Asegura que todos los registros tengan uid (por ejemplo, después de importar una copia vieja). */
+/**
+ * ¿Hay registros con `campo` vacío? Se cuenta con el índice (sin leer los registros): un registro
+ * sin el campo no está en el índice, y '' sí está pero cuenta como vacío.
+ */
+async function faltan(t: Table, campo: string) {
+  return (await t.count()) !== (await t.orderBy(campo).count()) || (await t.where(campo).equals('').count()) > 0;
+}
+
 export async function asegurarUids() {
   await db.transaction('rw', [...SINCRONIZADAS.map((n) => db.table(n))], async () => {
     for (const n of ['habitos', 'checkins', 'mediciones', 'sesiones', 'ejerciciosPropios', 'comidas'] as const) {
+      if (!(await faltan(tabla(n), 'uid'))) continue;
       await tabla(n).filter((r) => !r.uid).modify((r) => {
         r.uid = crypto.randomUUID();
       });
     }
-    await tabla('logros').filter((r) => !r.uid).modify((r) => {
-      r.uid = r.id as string;
-    });
+    if (await faltan(db.logros, 'uid'))
+      await tabla('logros').filter((r) => !r.uid).modify((r) => {
+        r.uid = r.id as string;
+      });
     await tabla('perfil').filter((r) => r.uid !== 'perfil').modify((r) => {
       r.uid = 'perfil';
     });
@@ -116,11 +126,13 @@ export async function asegurarUids() {
       r.habitoUid ??= habitos.get(r.habitoId);
       if (r.habitoUid) r.uid = `${r.habitoUid}|${r.fecha}`;
     });
-    const checkins = new Map((await db.checkins.toArray()).map((c) => [c.id!, c.uid!]));
-    await db.fotos.filter((f) => !f.uid || !f.checkinUid).modify((f) => {
-      f.uid ??= crypto.randomUUID();
-      f.checkinUid ??= checkins.get(f.checkinId);
-    });
+    if ((await faltan(db.fotos, 'uid')) || (await faltan(db.fotos, 'checkinUid'))) {
+      const checkins = new Map((await db.checkins.toArray()).map((c) => [c.id!, c.uid!]));
+      await db.fotos.filter((f) => !f.uid || !f.checkinUid).modify((f) => {
+        f.uid ??= crypto.randomUUID();
+        f.checkinUid ??= checkins.get(f.checkinId);
+      });
+    }
   });
 }
 
@@ -160,7 +172,8 @@ async function subir(r: Remoto, compartirFotos: boolean) {
   // 2) Registros nuevos o cambiados
   for (const nombre of SINCRONIZADAS) {
     if (nombre === 'fotos' && !compartirFotos) continue;
-    const pendientes = await tabla(nombre).filter((x) => x._p === 1 && !!x.uid).toArray();
+    // Por el índice: solo se leen los registros pendientes (no todas las fotos de la tabla).
+    const pendientes = await tabla(nombre).where('_p').equals(1).filter((x) => !!x.uid).toArray();
     if (!pendientes.length) continue;
     const filas: FilaRemota[] = [];
     for (const p of pendientes) {
