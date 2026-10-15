@@ -29,3 +29,8 @@ await icono('public/pwa-maskable-512.png', 512, 0.56);
 // iPhone (pantalla de inicio): fondo opaco, iOS redondea las esquinas solo.
 await icono('public/apple-touch-icon.png', 180, 0.66);
 await icono('public/favicon.png', 64, 0.8, { redondeado: true });
+
+// Logo que se ve dentro de la app (máx. 64 px de alto en pantalla): 226 px de alto cubre pantallas 3x
+// y mantiene la proporción exacta del original (79:113), así se ve igual que el logo grande.
+await sharp(LOGO).resize({ width: 158, height: 226, kernel: 'lanczos3' }).png({ compressionLevel: 9, adaptiveFiltering: true }).toFile('assets/logo-app.png');
+console.log('✓ assets/logo-app.png');

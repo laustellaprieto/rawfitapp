@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { importarCopia } from '../lib/copia';
-import logo from '../../assets/logo.png';
+import logo from '../../assets/logo-app.png';
 import { calcularMacros, valido } from '../lib/calorias';
 import { db, guardarPerfil, type Perfil, type Sexo } from '../lib/db';
 import { hoyISO } from '../lib/fechas';

@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import logo from '../../assets/logo.png';
+import logo from '../../assets/logo-app.png';
 import { copiarReporte, guardarError } from '../lib/version';
 
 interface Props {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import logo from '../assets/logo.png';
+import logo from '../assets/logo-app.png';
 import { Celebracion } from './components/Celebracion';
 import { Icon, type IconName } from './components/Icon';
 import { PiePagina } from './components/ui';
