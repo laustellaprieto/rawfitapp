@@ -10,7 +10,7 @@ import { formatoVolumen, volumenSesion } from '../../lib/entreno';
 import { analizar, resumenCampo } from '../../lib/progreso';
 import { agruparBloques, finDe, semanasDe, textoFechas, textoObjetivo, type Bloque } from '../../lib/rutinas';
 import { traducirError, type PerfilNube } from '../../lib/nube';
-import { GraficaLinea } from '../../components/Graficas';
+import { GraficaLinea } from '../../components/GraficasDiferidas';
 import { Icon } from '../../components/Icon';
 import { Sheet } from '../../components/Sheet';
 import { Delta, Segmentos, Stat } from '../../components/ui';

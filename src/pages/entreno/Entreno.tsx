@@ -4,7 +4,7 @@ import { db, type Sesion } from '../../lib/db';
 import { fechaRelativa, hoyISO, inicioSemana, nombreMes } from '../../lib/fechas';
 import { num } from '../../lib/format';
 import { calcularRecords, formatoVolumen, volumenPorGrupo, volumenSesion } from '../../lib/entreno';
-import { BarrasHorizontales, MiniLinea } from '../../components/Graficas';
+import { BarrasHorizontales, MiniLinea } from '../../components/GraficasSimples';
 import { Icon } from '../../components/Icon';
 import { Sheet } from '../../components/Sheet';
 import { BotonAgregar, Encabezado, Segmentos, Stat, Vacio } from '../../components/ui';

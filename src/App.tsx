@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import logo from '../assets/logo-app.png';
 import { Celebracion } from './components/Celebracion';
 import { Icon, type IconName } from './components/Icon';
@@ -9,7 +9,6 @@ import { reintentarVinculo, useCuenta } from './lib/nube';
 import { guardarPerfil, perfilInicial } from './lib/db';
 import { DialogosCuenta } from './components/Cuenta';
 import { Cargando, Recuperacion } from './components/Recuperacion';
-import PanelCoach from './pages/coach/PanelCoach';
 import Ajustes from './pages/Ajustes';
 import Habitos from './pages/Habitos';
 import Hoy from './pages/Hoy';
@@ -18,6 +17,9 @@ import Ejercicios from './pages/Ejercicios';
 import Comida from './pages/Comida';
 import Progreso from './pages/progreso/Progreso';
 import Entreno from './pages/entreno/Entreno';
+
+// Solo la coach usa el panel: se carga aparte, cuando lo abre.
+const PanelCoach = lazy(() => import('./pages/coach/PanelCoach'));
 
 /**
  * Guarda la altura real del menú inferior en --alto-nav para que el final de cada pantalla
@@ -144,7 +146,14 @@ export default function App() {
         {pagina === 'entreno' && <Entreno accion={accion} />}
         {pagina === 'ejercicios' && <Ejercicios />}
         {pagina === 'ajustes' && <Ajustes perfil={perfil} ir={ir} pantalla={pantalla} />}
-        {pagina === 'coach' && (esCoach ? <PanelCoach /> : <Hoy perfil={perfil} ir={ir} />)}
+        {pagina === 'coach' &&
+          (esCoach ? (
+            <Suspense fallback={<Cargando />}>
+              <PanelCoach />
+            </Suspense>
+          ) : (
+            <Hoy perfil={perfil} ir={ir} />
+          ))}
         </Recuperacion>
         <PiePagina />
       </main>

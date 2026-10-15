@@ -4,7 +4,7 @@ import { db, type Medicion, type Perfil } from '../../lib/db';
 import { fechaCorta, fechaRelativa, hoyISO } from '../../lib/fechas';
 import { num, numTxt, parseNum } from '../../lib/format';
 import { analizar, CAMPOS_MEDICION, cinturaEstatura, resumenCampo, type CampoMedicion } from '../../lib/progreso';
-import { GraficaDosLineas, GraficaLinea } from '../../components/Graficas';
+import { GraficaDosLineas, GraficaLinea } from '../../components/GraficasDiferidas';
 import { Icon } from '../../components/Icon';
 import { Sheet } from '../../components/Sheet';
 import { BotonAgregar, Delta, Vacio } from '../../components/ui';
