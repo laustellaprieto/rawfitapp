@@ -18,7 +18,6 @@ export const EMOJIS_HABITO = [
   '🚶', '🏃', '🚴', '🏊', '🍳', '💊', '🙏', '✍️', '🦷', '🧴', '🥛', '☕', '🍬', '🎯', '❤️',
 ];
 
-export const PIE_DE_PAGINA = 'Stella Prieto · Entrenadora deportiva · @rawfit.stella';
 export const INSTAGRAM = 'https://instagram.com/rawfit.stella';
 export const AVISO_SALUD =
   'Esta app es una herramienta de seguimiento y no reemplaza la valoración de un profesional de la salud.';

@@ -1,4 +1,4 @@
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { num } from '../lib/format';
 
 const EJE = { fill: '#8C8C8C', fontSize: 11 };
@@ -57,23 +57,6 @@ export function GraficaLinea({ datos, unidad, meta, alto = 200 }: { datos: { x: 
             animationDuration={700}
           />
         </AreaChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-/** Barras simples (ej. entrenos por semana). */
-export function GraficaBarras({ datos, unidad, alto = 180, dec = 0 }: { datos: { x: string; y: number }[]; unidad: string; alto?: number; dec?: number }) {
-  return (
-    <div style={{ height: alto }} className="-ml-2">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={datos} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-          <CartesianGrid stroke="#2B2B2B" strokeDasharray="3 4" vertical={false} />
-          <XAxis dataKey="x" tick={EJE} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={8} />
-          <YAxis tick={EJE} tickLine={false} axisLine={false} width={32} allowDecimals={false} />
-          <Tooltip content={<Globo unidad={unidad} dec={dec} />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
-          <Bar dataKey="y" fill="#C9A96E" radius={[4, 4, 0, 0]} maxBarSize={28} animationDuration={700} />
-        </BarChart>
       </ResponsiveContainer>
     </div>
   );

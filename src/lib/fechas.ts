@@ -29,10 +29,7 @@ export function diasEntre(a: string, b: string): number {
   return Math.round((fromISO(b).getTime() - fromISO(a).getTime()) / 86_400_000);
 }
 
-const DIAS_CORTOS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-
-export const diaCorto = (iso: string) => DIAS_CORTOS[fromISO(iso).getDay()];
 
 export function fechaCorta(iso: string): string {
   const d = fromISO(iso);

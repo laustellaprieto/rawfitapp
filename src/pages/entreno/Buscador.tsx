@@ -5,8 +5,6 @@ import { buscarEjercicios } from '../../lib/busqueda';
 import { Icon } from '../../components/Icon';
 import { Segmentos } from '../../components/ui';
 
-export { normalizar } from '../../lib/busqueda';
-
 /** Buscador del banco de ejercicios para agregarlos a una sesión. */
 export function Buscador({ onElegir }: { onElegir: (e: EjercicioBanco) => void }) {
   const banco = useBanco();
