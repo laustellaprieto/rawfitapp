@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { cambiarEstadoOpinion, ESTADOS_OPINION, listarOpiniones, TIPOS_OPINION, urlCaptura, type EstadoOpinion, type Opinion, type TipoOpinion } from '../../lib/feedback';
+import { cambiarEstadoOpinion, ESTADOS_OPINION, listarOpiniones, TIPOS_OPINION, type EstadoOpinion, type Opinion, type TipoOpinion } from '../../lib/feedback';
+import { urlFirmada } from '../../lib/coach';
 import { fechaRelativa, toISO } from '../../lib/fechas';
 import { traducirError } from '../../lib/nube';
 import { Icon } from '../../components/Icon';
@@ -96,7 +97,7 @@ function TarjetaOpinion({ o, onEstado }: { o: Opinion; onEstado: (e: EstadoOpini
   useEffect(() => {
     if (!o.imagen_path) return;
     let vivo = true;
-    urlCaptura(o.imagen_path)
+    urlFirmada('feedback', o.imagen_path)
       .then((u) => vivo && setCaptura(u))
       .catch(() => {});
     return () => {

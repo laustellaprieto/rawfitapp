@@ -1,6 +1,6 @@
 /** Opiniones de testers: se envían directo a la nube (tabla `feedback`, ver supabase/feedback.sql). */
 import { comprimirImagen } from './image';
-import { supabase, traducirError } from './nube';
+import { nube as sb, traducirError } from './nube';
 
 export const TIPOS_OPINION = [
   { valor: 'me_gusto', texto: 'Me gustó', emoji: '💛' },
@@ -33,11 +33,6 @@ export interface Opinion {
   estado: EstadoOpinion;
   creado_en: string;
 }
-
-const sb = () => {
-  if (!supabase) throw new Error('La nube no está configurada.');
-  return supabase;
-};
 
 export async function enviarOpinion(o: { nombre: string; tipo: TipoOpinion; estrellas: number; texto: string; captura?: File; pantalla: string }) {
   if (!navigator.onLine) throw new Error('Necesitas internet para enviar tu opinión. Lo que escribiste sigue aquí.');
@@ -78,10 +73,4 @@ export async function listarOpiniones(): Promise<Opinion[]> {
 export async function cambiarEstadoOpinion(id: string, estado: EstadoOpinion) {
   const { error } = await sb().from('feedback').update({ estado }).eq('id', id);
   if (error) throw new Error(traducirError(error));
-}
-
-export async function urlCaptura(path: string) {
-  const { data, error } = await sb().storage.from('feedback').createSignedUrl(path, 3600);
-  if (error) throw new Error(traducirError(error));
-  return data.signedUrl;
 }

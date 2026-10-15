@@ -12,6 +12,12 @@ export const supabase: SupabaseClient | null = nubeConfigurada
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } })
   : null;
 
+/** Cliente de Supabase para las funciones que necesitan la nube (error claro si no está configurada). */
+export const nube = () => {
+  if (!supabase) throw new Error('La nube no está configurada.');
+  return supabase;
+};
+
 export type EstadoCliente = 'ninguno' | 'pendiente' | 'aceptado' | 'rechazado';
 
 export interface PerfilNube {

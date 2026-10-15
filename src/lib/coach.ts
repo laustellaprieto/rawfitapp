@@ -1,11 +1,7 @@
 /** Funciones del panel de coach (siempre con internet: leen y escriben directo en la nube). */
 import type { Checkin, Comida, Habito, Medicion, Nutricion, Perfil, RegistroHabito, Rutina, Sesion } from './db';
-import { supabase, traducirError, type PerfilNube } from './nube';
+import { nube as sb, traducirError, type PerfilNube } from './nube';
 
-const sb = () => {
-  if (!supabase) throw new Error('La nube no está configurada.');
-  return supabase;
-};
 const ok = <T>(r: { data: T; error: unknown }) => {
   if (r.error) throw new Error(traducirError(r.error));
   return r.data;
@@ -93,7 +89,7 @@ export async function borrarPdf(cliente: string, n: Nutricion & { uid: string })
   await guardarParaCliente(cliente, 'nutricion', n.uid, null);
 }
 
-export async function urlFirmada(bucket: 'fotos' | 'nutricion', path: string) {
+export async function urlFirmada(bucket: 'fotos' | 'nutricion' | 'feedback', path: string) {
   const { data, error } = await sb().storage.from(bucket).createSignedUrl(path, 3600);
   if (error) throw new Error(traducirError(error));
   return data.signedUrl;
