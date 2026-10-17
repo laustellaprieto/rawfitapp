@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { db, type Sesion } from '../../lib/db';
 import { fechaRelativa, hoyISO, inicioSemana, nombreMes } from '../../lib/fechas';
 import { num } from '../../lib/format';
-import { calcularRecords, formatoVolumen, volumenPorGrupo, volumenSesion } from '../../lib/entreno';
+import { calcularRecords, formatoVolumen, volumenPorGrupo, volumenSesion, textoCompletados } from '../../lib/entreno';
 import { BarrasHorizontales, MiniLinea } from '../../components/GraficasSimples';
 import { Icon } from '../../components/Icon';
 import { Sheet } from '../../components/Sheet';
@@ -153,6 +153,7 @@ function Historial({ lista, onAbrir }: { lista: Sesion[]; onAbrir: (s: Sesion) =
               <span className="text-suave mt-0.5 block text-xs">
                 {s.ejercicios.length} {s.ejercicios.length === 1 ? 'ejercicio' : 'ejercicios'} · {s.ejercicios.reduce((t, e) => t + e.series.length, 0)} series ·{' '}
                 <b className="text-champagne">{formatoVolumen(volumenSesion(s))}</b>
+                {textoCompletados(s) && <b className="text-baja"> · {textoCompletados(s)}</b>}
               </span>
               <span className="text-texto/70 mt-1 block truncate text-xs">{s.ejercicios.map((e) => e.nombre).join(' · ')}</span>
             </span>

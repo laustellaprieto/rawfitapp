@@ -6,7 +6,7 @@ import type { Habito, Rutina } from '../../lib/db';
 import { diaDelReto, fechaCorta, fechaRelativa, hoyISO, sumarDias, toISO } from '../../lib/fechas';
 import { num } from '../../lib/format';
 import { indexarRegistros, porcentajeDia, rachaActual } from '../../lib/habitos';
-import { formatoVolumen, volumenSesion } from '../../lib/entreno';
+import { formatoVolumen, volumenSesion, textoCompletados } from '../../lib/entreno';
 import { analizar, resumenCampo } from '../../lib/progreso';
 import { agruparBloques, finDe, semanasDe, textoFechas, textoObjetivo, type Bloque } from '../../lib/rutinas';
 import { traducirError, type PerfilNube } from '../../lib/nube';
@@ -166,6 +166,7 @@ function Progreso({ d, cliente }: { d: DatosCliente; cliente: PerfilNube }) {
                 </div>
                 <p className="text-suave text-xs">
                   {s.ejercicios.length} ejercicios · <b className="text-champagne">{formatoVolumen(volumenSesion(s))}</b>
+                  {textoCompletados(s) && <b className="text-baja"> · {textoCompletados(s)} completados</b>}
                 </p>
                 <p className="text-texto/70 truncate text-xs">
                   {s.ejercicios.map((e) => `${e.nombre} ${e.series.map((x) => `${x.reps ?? '?'}×${x.peso ?? 0}`).join(', ')}`).join(' · ')}

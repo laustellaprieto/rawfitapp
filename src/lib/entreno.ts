@@ -6,6 +6,9 @@ import { db, type EjercicioSesion, type Serie, type Sesion } from './db';
 export const volumenSerie = (s: Serie) => (s.reps ?? 0) * (s.peso ?? 0);
 export const volumenEjercicio = (e: EjercicioSesion) => e.series.reduce((t, s) => t + volumenSerie(s), 0);
 export const volumenSesion = (s: Sesion) => s.ejercicios.reduce((t, e) => t + volumenEjercicio(e), 0);
+/** "✓ 4/5" si la persona marcó ejercicios como completados en esa sesión (las sesiones antiguas no lo tienen). */
+export const textoCompletados = (s: Sesion) =>
+  s.ejercicios.some((e) => e.hecho) ? `✓ ${s.ejercicios.filter((e) => e.hecho).length}/${s.ejercicios.length}` : '';
 
 /** Banco completo: ejercicios del archivo de datos + los que agregó la persona. */
 export function useBanco(): EjercicioBanco[] {

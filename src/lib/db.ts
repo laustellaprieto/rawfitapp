@@ -90,6 +90,7 @@ export interface EjercicioSesion {
   grupo: string;
   series: Serie[];
   objetivo?: string; // lo que pidió la coach, ej. "4 × 8–10 · 50 kg · RIR 2"
+  hecho?: boolean; // la persona lo marcó como completado
 }
 
 export interface Sesion extends Sincronizable {
